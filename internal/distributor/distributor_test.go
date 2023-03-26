@@ -11,7 +11,6 @@ import (
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 // generateMnemonic generates a new BIP39 mnemonic
@@ -105,7 +104,6 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			zap.NewNop(),
 			&mockTxBroadcaster{},
 			mockStore,
 			&mockSigner{},
@@ -158,7 +156,6 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			zap.NewNop(),
 			&mockTxBroadcaster{},
 			mockStore,
 			&mockSigner{},
@@ -250,7 +247,6 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			zap.NewNop(),
 			mockBroadcaster,
 			mockStore,
 			mockSigner,

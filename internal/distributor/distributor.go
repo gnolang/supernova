@@ -10,7 +10,7 @@ import (
 	"github.com/gnolang/gno/pkgs/sdk/bank"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"go.uber.org/zap"
+	"github.com/schollz/progressbar/v3"
 )
 
 var (
@@ -32,8 +32,6 @@ type txSigner interface {
 // Distributor is the process
 // that manages sub-account distributions
 type Distributor struct {
-	logger *zap.Logger
-
 	broadcaster txBroadcaster
 	store       accountStore
 	signer      txSigner
@@ -41,13 +39,11 @@ type Distributor struct {
 
 // NewDistributor creates a new instance of the distributor
 func NewDistributor(
-	logger *zap.Logger,
 	broadcaster txBroadcaster,
 	store accountStore,
 	signer txSigner,
 ) *Distributor {
 	return &Distributor{
-		logger:      logger.Named("distributor"),
 		broadcaster: broadcaster,
 		store:       store,
 		signer:      signer,
@@ -62,6 +58,11 @@ func (d *Distributor) Distribute(
 ) ([]keys.Info, error) {
 	// Calculate the base fees
 	subAccountCost := calculateRuntimeCosts(int64(transactions))
+	fmt.Printf(
+		"Calculated sub-account cost as %d%s\n",
+		subAccountCost.Amount,
+		subAccountCost.Denom,
+	)
 
 	// Fund the accounts
 	return d.fundAccounts(accounts, subAccountCost)
@@ -133,6 +134,8 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	// Check if funding is even necessary
 	if len(shortAccounts) == 0 {
 		// All accounts are already funded
+		fmt.Printf("✅ All %d accounts are already funded\n", len(readyAccounts))
+
 		return readyAccounts, nil
 	}
 
@@ -169,6 +172,12 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	if fundableIndex == 0 {
 		// The distributor does not have funds to fund
 		// any account for the stress test
+		fmt.Printf(
+			"❌ Distributor cannot fund any account, balance is %d%s\n",
+			distributorBalance.AmountOf(common.Denomination),
+			common.Denomination,
+		)
+
 		return nil, errInsufficientFunds
 	}
 
@@ -176,6 +185,9 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	// there is no need to re-fetch the account again
 	// before signing a future tx
 	nonce := distributor.Sequence
+
+	fmt.Printf("Funding %d accounts...\n", len(shortAccounts))
+	bar := progressbar.Default(int64(len(shortAccounts)), "funding short accounts")
 
 	for _, account := range shortAccounts {
 		// Generate the transaction
@@ -205,7 +217,11 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 
 		// Mark the account as funded
 		readyAccounts = append(readyAccounts, account.account)
+
+		_ = bar.Add(1)
 	}
+
+	fmt.Printf("✅ Successfully funded %d accounts\n", len(shortAccounts))
 
 	return readyAccounts, nil
 }

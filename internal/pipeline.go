@@ -10,7 +10,7 @@ import (
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
-	"go.uber.org/zap"
+	"github.com/schollz/progressbar/v3"
 )
 
 var (
@@ -27,8 +27,7 @@ var (
 )
 
 type Pipeline struct {
-	ctx    context.Context
-	logger *zap.Logger
+	ctx context.Context
 
 	cfg     *Config
 	keybase keys.Keybase
@@ -36,10 +35,9 @@ type Pipeline struct {
 }
 
 // NewPipeline creates a new pipeline instance
-func NewPipeline(ctx context.Context, logger *zap.Logger, cfg *Config) *Pipeline {
+func NewPipeline(ctx context.Context, cfg *Config) *Pipeline {
 	return &Pipeline{
 		ctx:     ctx,
-		logger:  logger.Named("pipeline"),
 		cfg:     cfg,
 		keybase: keys.NewInMemory(),
 		cli:     client.NewHTTP(cfg.URL, ""),
@@ -48,7 +46,10 @@ func NewPipeline(ctx context.Context, logger *zap.Logger, cfg *Config) *Pipeline
 
 func (p *Pipeline) Execute() error {
 	// Register the accounts with the keybase
+	fmt.Println("Generating sub-accounts...")
+
 	accounts := make([]keys.Info, p.cfg.SubAccounts+1)
+	bar := progressbar.Default(int64(p.cfg.SubAccounts+1), "sub-accounts added")
 
 	for i := 0; i < int(p.cfg.SubAccounts)+1; i++ {
 		info, err := p.keybase.CreateAccount(
@@ -64,10 +65,14 @@ func (p *Pipeline) Execute() error {
 		}
 
 		accounts[i] = info
+		_ = bar.Add(1)
 	}
 
+	// Distribution //
+
+	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
+
 	_, err := distributor.NewDistributor(
-		p.logger,
 		newBroadcaster(p.cli),
 		newStore(p.cli),
 		newSigner(p.keybase),

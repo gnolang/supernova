@@ -8,7 +8,6 @@ import (
 
 	"github.com/gnolang/supernova/internal"
 	"github.com/peterbourgon/ff/v3/ffcli"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -105,12 +104,6 @@ func execMain(ctx context.Context, cfg *internal.Config) error {
 		return fmt.Errorf("invalid configuration, %w", err)
 	}
 
-	// Create the logger instance
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return fmt.Errorf("unable to create a logger instance, %w", err)
-	}
-
 	// Create and run the pipeline
-	return internal.NewPipeline(ctx, logger, cfg).Execute()
+	return internal.NewPipeline(ctx, cfg).Execute()
 }
