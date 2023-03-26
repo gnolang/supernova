@@ -8,11 +8,9 @@ import (
 
 	"github.com/gnolang/gno/pkgs/bft/rpc/client"
 	"github.com/gnolang/gno/pkgs/crypto/keys"
+	"github.com/gnolang/supernova/internal/common"
+	"github.com/gnolang/supernova/internal/distributor"
 	"go.uber.org/zap"
-)
-
-const (
-	encryptPassword = "encrypt"
 )
 
 var (
@@ -49,10 +47,33 @@ func NewPipeline(ctx context.Context, logger *zap.Logger, cfg *Config) *Pipeline
 }
 
 func (p *Pipeline) Execute() error {
-	_, err := newDistributor(p.logger, p.cli, p.keybase).distribute(
-		p.cfg.SubAccounts,
+	// Register the accounts with the keybase
+	accounts := make([]keys.Info, p.cfg.SubAccounts+1)
+
+	for i := 0; i < int(p.cfg.SubAccounts)+1; i++ {
+		info, err := p.keybase.CreateAccount(
+			fmt.Sprintf("%s%d", common.KeybasePrefix, i),
+			p.cfg.Mnemonic,
+			"",
+			common.EncryptPassword,
+			uint32(0),
+			uint32(i),
+		)
+		if err != nil {
+			return fmt.Errorf("unable to create account with keybase, %w", err)
+		}
+
+		accounts[i] = info
+	}
+
+	_, err := distributor.NewDistributor(
+		p.logger,
+		newBroadcaster(p.cli),
+		newStore(p.cli),
+		newSigner(p.keybase),
+	).Distribute(
+		accounts,
 		p.cfg.Transactions,
-		p.cfg.Mnemonic,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to distribute funds, %w", err)
