@@ -4,7 +4,15 @@ go 1.19
 
 require github.com/peterbourgon/ff/v3 v3.3.0
 
-require go.uber.org/zap v1.24.0
+require (
+	github.com/stretchr/testify v1.8.2
+	go.uber.org/zap v1.24.0
+)
+
+require (
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
 
 require (
 	github.com/btcsuite/btcd v0.22.0-beta.0.20220111032746-97732e52810c // indirect

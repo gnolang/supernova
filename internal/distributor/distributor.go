@@ -13,6 +13,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	errInsufficientFunds = errors.New("insufficient distributor funds")
+)
+
 type txBroadcaster interface {
 	BroadcastTxWithCommit(*std.Tx) error
 }
@@ -126,6 +130,12 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		readyAccounts = append(readyAccounts, account)
 	}
 
+	// Check if funding is even necessary
+	if len(shortAccounts) == 0 {
+		// All accounts are already funded
+		return readyAccounts, nil
+	}
+
 	// Sort the short accounts so the ones with
 	// the lowest missing funds are funded first
 	sort.Slice(shortAccounts, func(i, j int) bool {
@@ -159,7 +169,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	if fundableIndex == 0 {
 		// The distributor does not have funds to fund
 		// any account for the stress test
-		return nil, errors.New("insufficient distributor funds")
+		return nil, errInsufficientFunds
 	}
 
 	// Locally keep track of the nonce, so
