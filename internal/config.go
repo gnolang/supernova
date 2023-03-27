@@ -1,6 +1,9 @@
 package internal
 
-import "github.com/gnolang/gno/pkgs/crypto/bip39"
+import (
+	"github.com/gnolang/gno/pkgs/crypto/bip39"
+	"github.com/gnolang/supernova/internal/runtime"
+)
 
 type Config struct {
 	URL      string
@@ -27,7 +30,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Make sure the mode is valid
-	if !isRuntime(RuntimeType(cfg.Mode)) {
+	if !runtime.IsRuntime(runtime.Type(cfg.Mode)) {
 		return errInvalidMode
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/gnolang/gno/pkgs/sdk/bank"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
+	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -25,23 +26,19 @@ type accountStore interface {
 	GetAccount(string) (*gnoland.GnoAccount, error)
 }
 
-type txSigner interface {
-	SignTx(*std.Tx, *gnoland.GnoAccount, uint64, string) error
-}
-
 // Distributor is the process
 // that manages sub-account distributions
 type Distributor struct {
 	broadcaster txBroadcaster
 	store       accountStore
-	signer      txSigner
+	signer      signer.Signer
 }
 
 // NewDistributor creates a new instance of the distributor
 func NewDistributor(
 	broadcaster txBroadcaster,
 	store accountStore,
-	signer txSigner,
+	signer signer.Signer,
 ) *Distributor {
 	return &Distributor{
 		broadcaster: broadcaster,
@@ -55,7 +52,7 @@ func NewDistributor(
 func (d *Distributor) Distribute(
 	accounts []keys.Info,
 	transactions uint64,
-) ([]keys.Info, error) {
+) ([]*gnoland.GnoAccount, error) {
 	// Calculate the base fees
 	subAccountCost := calculateRuntimeCosts(int64(transactions))
 	fmt.Printf(
@@ -90,15 +87,15 @@ func calculateRuntimeCosts(totalTx int64) std.Coin {
 
 // fundAccounts attempts to fund accounts that have missing funds,
 // and returns the accounts that can participate in the stress test
-func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin) ([]keys.Info, error) {
+func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin) ([]*gnoland.GnoAccount, error) {
 	type shortAccount struct {
-		account      keys.Info
+		account      *gnoland.GnoAccount
 		missingFunds std.Coin
 	}
 
 	var (
 		// Accounts that are ready (funded) for the run
-		readyAccounts = make([]keys.Info, 0, len(accounts))
+		readyAccounts = make([]*gnoland.GnoAccount, 0, len(accounts))
 
 		// Accounts that need funding
 		shortAccounts = make([]shortAccount, 0, len(accounts))
@@ -117,7 +114,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		if subAccount.Coins.AmountOf(common.Denomination) < singleRunCost.Amount {
 			// Mark the account as needing a top-up
 			shortAccounts = append(shortAccounts, shortAccount{
-				account: account,
+				account: subAccount,
 				missingFunds: std.Coin{
 					Denom:  common.Denomination,
 					Amount: singleRunCost.Amount - subAccount.Coins.AmountOf(common.Denomination),
@@ -128,7 +125,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		}
 
 		// The account is cleared for the stress test
-		readyAccounts = append(readyAccounts, account)
+		readyAccounts = append(readyAccounts, subAccount)
 	}
 
 	// Check if funding is even necessary
@@ -199,7 +196,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 					Amount:      std.NewCoins(account.missingFunds),
 				},
 			},
-			Fee: std.NewFee(60000, common.DefaultGasFee),
+			Fee: std.NewFee(100000, common.DefaultGasFee),
 		}
 
 		// Sign the transaction

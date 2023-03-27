@@ -10,6 +10,8 @@ import (
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
+	"github.com/gnolang/supernova/internal/runtime"
+	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -68,20 +70,48 @@ func (p *Pipeline) Execute() error {
 		_ = bar.Add(1)
 	}
 
+	var (
+		txSigner      = signer.NewKeybaseSigner(p.keybase, p.cfg.ChainID)
+		accountStore  = newStore(p.cli)
+		txBroadcaster = newBroadcaster(p.cli)
+	)
+
+	setRuntime := runtime.GetRuntime(runtime.Type(p.cfg.Mode), txSigner)
+
+	if runtime.Type(p.cfg.Mode) == runtime.RealmCall {
+		deployer, err := accountStore.GetAccount(accounts[0].GetAddress().String())
+		if err != nil {
+			return fmt.Errorf("unable to fetch deployer account, %w", err)
+		}
+
+		if err := setRuntime.Initialize(deployer); err != nil {
+			return fmt.Errorf("unable to initialize runtime, %w", err)
+		}
+	}
+
 	// Distribution //
 
 	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
 
-	_, err := distributor.NewDistributor(
-		newBroadcaster(p.cli),
-		newStore(p.cli),
-		newSigner(p.keybase),
+	runAccounts, err := distributor.NewDistributor(
+		txBroadcaster,
+		accountStore,
+		txSigner,
 	).Distribute(
 		accounts,
 		p.cfg.Transactions,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to distribute funds, %w", err)
+	}
+
+	// Runtime //
+
+	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
+
+	_, err = setRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
+	if err != nil {
+		return fmt.Errorf("unable to construct transactions, %w", err)
 	}
 
 	return nil

@@ -1,4 +1,4 @@
-package internal
+package signer
 
 import (
 	"fmt"
@@ -8,20 +8,21 @@ import (
 	"github.com/gnolang/gno/pkgs/std"
 )
 
-type signer struct {
+type KeybaseSigner struct {
+	chainID string
 	keybase keys.Keybase
 }
 
-// newSigner creates a new signer instance
-func newSigner(keybase keys.Keybase) *signer {
-	return &signer{
+// NewKeybaseSigner creates a new signer instance
+func NewKeybaseSigner(keybase keys.Keybase, chainID string) *KeybaseSigner {
+	return &KeybaseSigner{
 		keybase: keybase,
 	}
 }
 
 // SignTx signs the given transaction by appending the
 // signature to it
-func (s *signer) SignTx(
+func (s *KeybaseSigner) SignTx(
 	tx *std.Tx,
 	account *gnoland.GnoAccount,
 	nonce uint64,
@@ -42,7 +43,7 @@ func (s *signer) SignTx(
 	signature, pub, err := s.keybase.Sign(
 		account.GetAddress().String(),
 		passphrase,
-		tx.GetSignBytes("dev", account.AccountNumber, nonce),
+		tx.GetSignBytes(s.chainID, account.AccountNumber, nonce),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to sign transaction, %w", err)

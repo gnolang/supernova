@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gnolang/supernova/internal"
+	"github.com/gnolang/supernova/internal/runtime"
 	"github.com/peterbourgon/ff/v3/ffcli"
 )
 
@@ -61,10 +62,10 @@ func registerFlags(fs *flag.FlagSet, c *internal.Config) {
 	fs.StringVar(
 		&c.Mode,
 		"mode",
-		internal.RealmDeployment.String(),
+		runtime.RealmDeployment.String(),
 		fmt.Sprintf(
 			"the mode for the stress test. Possible modes: [%s, %s, %s]",
-			internal.RealmDeployment.String(), internal.PackageDeployment.String(), internal.RealmCall.String(),
+			runtime.RealmDeployment.String(), runtime.PackageDeployment.String(), runtime.RealmCall.String(),
 		),
 	)
 
