@@ -32,17 +32,3 @@ func (m *mockAccountStore) GetAccount(address string) (*gnoland.GnoAccount, erro
 
 	return nil, nil
 }
-
-type signTxDelegate func(*std.Tx, *gnoland.GnoAccount, uint64, string) error
-
-type mockSigner struct {
-	signTxFn signTxDelegate
-}
-
-func (m *mockSigner) SignTx(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, passphrase string) error {
-	if m.signTxFn != nil {
-		return m.signTxFn(tx, account, nonce, passphrase)
-	}
-
-	return nil
-}

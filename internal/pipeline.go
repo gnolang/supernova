@@ -114,5 +114,13 @@ func (p *Pipeline) Execute() error {
 		return fmt.Errorf("unable to construct transactions, %w", err)
 	}
 
+	// Batcher //
+
+	// TODO
+
+	// Collector //
+
+	// TODO
+
 	return nil
 }

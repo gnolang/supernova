@@ -3,7 +3,12 @@ package runtime
 import (
 	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/signer"
+)
+
+var (
+	defaultDeployTxFee = std.NewFee(600000, common.DefaultGasFee)
 )
 
 // Runtime is the base interface for all runtime

@@ -6,6 +6,7 @@ const (
 	RealmDeployment   Type = "REALM_DEPLOYMENT"
 	PackageDeployment Type = "PACKAGE_DEPLOYMENT"
 	RealmCall         Type = "REALM_CALL"
+	unknown           Type = "UNKNOWN"
 )
 
 // IsRuntime checks if the passed in runtime
@@ -27,6 +28,6 @@ func (r Type) String() string {
 	case RealmCall:
 		return string(RealmCall)
 	default:
-		return "UNKNOWN"
+		return string(unknown)
 	}
 }
