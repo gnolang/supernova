@@ -112,6 +112,9 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 
 		// Check if it has enough funds for the run
 		if subAccount.Coins.AmountOf(common.Denomination) < singleRunCost.Amount {
+			// TODO temporary fix
+			subAccount.Address = account.GetAddress()
+
 			// Mark the account as needing a top-up
 			shortAccounts = append(shortAccounts, shortAccount{
 				account: subAccount,

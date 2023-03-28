@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/gnolang/gno/gnoland"
@@ -35,11 +36,17 @@ func (c *commonDeployment) ConstructTransactions(
 	accounts []*gnoland.GnoAccount,
 	transactions uint64,
 ) ([]*std.Tx, error) {
+	// Get absolute path to folder
+	deployPathAbs, err := filepath.Abs(c.deployDir)
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve absolute path, %w", err)
+	}
+
 	var (
 		timestamp = time.Now().Unix()
 		getMsgFn  = func(creator *gnoland.GnoAccount, index int) std.Msg {
 			memPkg := gnolang.ReadMemPackage(
-				c.deployDir,
+				deployPathAbs,
 				fmt.Sprintf("%s/stress-%d-%d", c.deployPathPrefix, timestamp, index),
 			)
 

@@ -17,6 +17,7 @@ type KeybaseSigner struct {
 func NewKeybaseSigner(keybase keys.Keybase, chainID string) *KeybaseSigner {
 	return &KeybaseSigner{
 		keybase: keybase,
+		chainID: chainID,
 	}
 }
 

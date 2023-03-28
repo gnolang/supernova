@@ -61,5 +61,7 @@ func constructTransactions(
 		_ = bar.Add(1)
 	}
 
+	fmt.Printf("✅ Successfully constructed %d transactions\n", transactions)
+
 	return txs, nil
 }
