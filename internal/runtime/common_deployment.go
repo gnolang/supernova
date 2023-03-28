@@ -14,19 +14,21 @@ import (
 type commonDeployment struct {
 	signer signer.Signer
 
-	deployPrefix string
+	deployDir        string
+	deployPathPrefix string
 }
 
-func newCommonDeployment(signer signer.Signer, prefix string) *commonDeployment {
+func newCommonDeployment(signer signer.Signer, deployDir, deployPrefix string) *commonDeployment {
 	return &commonDeployment{
-		signer:       signer,
-		deployPrefix: prefix,
+		signer:           signer,
+		deployDir:        deployDir,
+		deployPathPrefix: deployPrefix,
 	}
 }
 
-func (c *commonDeployment) Initialize(_ *gnoland.GnoAccount) error {
+func (c *commonDeployment) Initialize(_ *gnoland.GnoAccount) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
-	return nil
+	return nil, nil
 }
 
 func (c *commonDeployment) ConstructTransactions(
@@ -37,8 +39,8 @@ func (c *commonDeployment) ConstructTransactions(
 		timestamp = time.Now().Unix()
 		getMsgFn  = func(creator *gnoland.GnoAccount, index int) std.Msg {
 			memPkg := gnolang.ReadMemPackage(
-				fmt.Sprintf("./scripts/%s", c.deployPrefix),
-				fmt.Sprintf("gno.land/%s/demo/stress-%d-%d", c.deployPrefix, timestamp, index),
+				c.deployDir,
+				fmt.Sprintf("%s/stress-%d-%d", c.deployPathPrefix, timestamp, index),
 			)
 
 			return vm.MsgAddPackage{

@@ -28,19 +28,18 @@ func newRealmCall(signer signer.Signer) *realmCall {
 	}
 }
 
-func (r *realmCall) Initialize(account *gnoland.GnoAccount) error {
+func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
 	// The Realm needs to be deployed before
 	// it can be interacted with
-	realmPath := fmt.Sprintf("gno.land/r/demo/stress-%d", time.Now().Unix())
+	r.realmPath = fmt.Sprintf("%s/stress-%d", realmPathPrefix, time.Now().Unix())
 
-	memPkg := gnolang.ReadMemPackage(
-		"./scripts/r",
-		realmPath,
-	)
-
+	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
-		Package: memPkg,
+		Package: gnolang.ReadMemPackage(
+			realmLocation,
+			r.realmPath,
+		),
 	}
 
 	tx := &std.Tx{
@@ -48,13 +47,12 @@ func (r *realmCall) Initialize(account *gnoland.GnoAccount) error {
 		Fee:  std.NewFee(600000, common.DefaultGasFee),
 	}
 
+	// Sign it
 	if err := r.signer.SignTx(tx, account, account.Sequence, common.EncryptPassword); err != nil {
-		return fmt.Errorf("unable to sign initialize transaction, %w", err)
+		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
-	// TODO Broadcast
-
-	return nil
+	return []*std.Tx{tx}, nil
 }
 
 func (r *realmCall) ConstructTransactions(

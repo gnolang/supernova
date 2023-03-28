@@ -7,6 +7,14 @@ import (
 	"github.com/gnolang/supernova/internal/signer"
 )
 
+const (
+	realmLocation   = "./scripts/r"
+	packageLocation = "./scripts/p"
+
+	realmPathPrefix   = "gno.land/r/demo"
+	packagePathPrefix = "gno.land/p/demo"
+)
+
 var (
 	defaultDeployTxFee = std.NewFee(600000, common.DefaultGasFee)
 )
@@ -17,8 +25,9 @@ var (
 // The runtime's job is to prepare the transactions for the stress test (generate + sign),
 // and to predeploy (initialize) any infrastructure (package)
 type Runtime interface {
-	// Initialize prepares any infrastructure (predeploys packages), if any
-	Initialize(*gnoland.GnoAccount) error
+	// Initialize prepares any infrastructure transactions that are required
+	// to be executed before the stress test runs, if any
+	Initialize(*gnoland.GnoAccount) ([]*std.Tx, error)
 
 	// ConstructTransactions generates and signs the required transactions
 	// that will be used in the stress test
@@ -31,9 +40,9 @@ func GetRuntime(runtimeType Type, signer signer.Signer) Runtime {
 	case RealmCall:
 		return newRealmCall(signer)
 	case RealmDeployment:
-		return newCommonDeployment(signer, "r")
+		return newCommonDeployment(signer, realmLocation, realmPathPrefix)
 	case PackageDeployment:
-		return newCommonDeployment(signer, "p")
+		return newCommonDeployment(signer, packageLocation, packagePathPrefix)
 	default:
 		return nil
 	}

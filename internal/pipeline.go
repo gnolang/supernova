@@ -79,13 +79,23 @@ func (p *Pipeline) Execute() error {
 	setRuntime := runtime.GetRuntime(runtime.Type(p.cfg.Mode), txSigner)
 
 	if runtime.Type(p.cfg.Mode) == runtime.RealmCall {
+		// Get the deployer account
 		deployer, err := accountStore.GetAccount(accounts[0].GetAddress().String())
 		if err != nil {
 			return fmt.Errorf("unable to fetch deployer account, %w", err)
 		}
 
-		if err := setRuntime.Initialize(deployer); err != nil {
+		// Get the predeploy transactions
+		predeployTxs, err := setRuntime.Initialize(deployer)
+		if err != nil {
 			return fmt.Errorf("unable to initialize runtime, %w", err)
+		}
+
+		// Execute the predeploy transactions
+		for _, tx := range predeployTxs {
+			if err := txBroadcaster.BroadcastTxWithCommit(tx); err != nil {
+				return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
+			}
 		}
 	}
 
