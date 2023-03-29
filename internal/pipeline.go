@@ -48,7 +48,7 @@ func NewPipeline(ctx context.Context, cfg *Config) *Pipeline {
 
 func (p *Pipeline) Execute() error {
 	// Register the accounts with the keybase
-	fmt.Println("Generating sub-accounts...")
+	fmt.Printf("\nGenerating sub-accounts...\n")
 
 	accounts := make([]keys.Info, p.cfg.SubAccounts+1)
 	bar := progressbar.Default(int64(p.cfg.SubAccounts+1), "sub-accounts added")
@@ -79,6 +79,8 @@ func (p *Pipeline) Execute() error {
 	setRuntime := runtime.GetRuntime(runtime.Type(p.cfg.Mode), txSigner)
 
 	if runtime.Type(p.cfg.Mode) == runtime.RealmCall {
+		fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
+
 		// Get the deployer account
 		deployer, err := accountStore.GetAccount(accounts[0].GetAddress().String())
 		if err != nil {
@@ -91,12 +93,18 @@ func (p *Pipeline) Execute() error {
 			return fmt.Errorf("unable to initialize runtime, %w", err)
 		}
 
+		bar := progressbar.Default(int64(len(predeployTxs)), "predeployed txs")
+
 		// Execute the predeploy transactions
 		for _, tx := range predeployTxs {
 			if err := txBroadcaster.BroadcastTxWithCommit(tx); err != nil {
 				return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
 			}
+
+			_ = bar.Add(1)
 		}
+
+		fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
 	}
 
 	// Distribution //

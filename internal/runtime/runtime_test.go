@@ -1,6 +1,9 @@
 package runtime
 
 import (
+	"os"
+	"path"
+	"runtime"
 	"testing"
 
 	"github.com/gnolang/gno/pkgs/sdk/vm"
@@ -34,8 +37,29 @@ func verifyDeployTxCommon(t *testing.T, tx *std.Tx, expectedPrefix string) {
 	assert.Equal(t, tx.Fee, defaultDeployTxFee)
 }
 
+// moveToRoot sets the current working
+// test directory to the project root.
+// This is used because of fixed .gno files in
+// ./scripts
+func moveToRoot(t *testing.T) {
+	t.Helper()
+
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("unable to get caller information")
+	}
+
+	dir := path.Join(path.Dir(filename), "../..")
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("unable to change to root dir, %v", err)
+	}
+}
+
 func TestRuntime_CommonDeployment(t *testing.T) {
 	t.Parallel()
+
+	// Change the working directory to root
+	moveToRoot(t)
 
 	testTable := []struct {
 		name           string
@@ -94,6 +118,9 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 
 func TestRuntime_RealmCall(t *testing.T) {
 	t.Parallel()
+
+	// Change the working directory to root
+	moveToRoot(t)
 
 	var (
 		transactions = uint64(100)

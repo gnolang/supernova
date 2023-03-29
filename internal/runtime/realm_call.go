@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/gnolang/gno/gnoland"
@@ -29,15 +30,21 @@ func newRealmCall(signer signer.Signer) *realmCall {
 }
 
 func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
+	// Get absolute path to folder
+	deployPathAbs, err := filepath.Abs(realmLocation)
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve absolute path, %w", err)
+	}
+
 	// The Realm needs to be deployed before
 	// it can be interacted with
-	r.realmPath = fmt.Sprintf("%s/stress-%d", realmPathPrefix, time.Now().Unix())
+	r.realmPath = fmt.Sprintf("%s/stress_%d", realmPathPrefix, time.Now().Unix())
 
 	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
 		Package: gnolang.ReadMemPackage(
-			realmLocation,
+			deployPathAbs,
 			r.realmPath,
 		),
 	}

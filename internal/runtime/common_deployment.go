@@ -47,7 +47,7 @@ func (c *commonDeployment) ConstructTransactions(
 		getMsgFn  = func(creator *gnoland.GnoAccount, index int) std.Msg {
 			memPkg := gnolang.ReadMemPackage(
 				deployPathAbs,
-				fmt.Sprintf("%s/stress-%d-%d", c.deployPathPrefix, timestamp, index),
+				fmt.Sprintf("%s/stress_%d_%d", c.deployPathPrefix, timestamp, index),
 			)
 
 			return vm.MsgAddPackage{
