@@ -8,7 +8,6 @@ import (
 
 	"github.com/gnolang/gno/pkgs/sdk/vm"
 	"github.com/gnolang/gno/pkgs/std"
-	"github.com/gnolang/supernova/internal/signer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,7 +89,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			)
 
 			// Get the runtime
-			r := GetRuntime(testCase.mode, &signer.MockSigner{})
+			r := GetRuntime(testCase.mode, &mockSigner{})
 
 			// Make sure there is no initialization logic
 			initialTxs, err := r.Initialize(nil)
@@ -128,7 +127,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 	)
 
 	// Get the runtime
-	r := GetRuntime(RealmCall, &signer.MockSigner{})
+	r := GetRuntime(RealmCall, &mockSigner{})
 
 	// Make sure the initialization logic is present
 	initialTxs, err := r.Initialize(accounts[0])

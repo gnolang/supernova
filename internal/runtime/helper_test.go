@@ -6,7 +6,6 @@ import (
 	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/sdk/vm"
 	"github.com/gnolang/gno/pkgs/std"
-	"github.com/gnolang/supernova/internal/signer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,8 +40,8 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		capturedSigns = make([]*std.Tx, 0, transactions)
 		msg           = vm.MsgAddPackage{}
 
-		mockSigner = &signer.MockSigner{
-			SignTxFn: func(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, _ string) error {
+		mockSigner = &mockSigner{
+			signTxFn: func(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, _ string) error {
 				// Make sure the nonce is being incremented
 				if nonce != nonceMap[account.AccountNumber] {
 					t.Fatalf("invalid nonce for account")

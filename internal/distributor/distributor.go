@@ -11,7 +11,6 @@ import (
 	"github.com/gnolang/gno/pkgs/sdk/bank"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -19,32 +18,30 @@ var (
 	errInsufficientFunds = errors.New("insufficient distributor funds")
 )
 
-type txBroadcaster interface {
-	BroadcastTxWithCommit(*std.Tx) error
+type Client interface {
+	GetAccount(address string) (*gnoland.GnoAccount, error)
+	BroadcastTransaction(tx *std.Tx) error
 }
 
-type accountStore interface {
-	GetAccount(string) (*gnoland.GnoAccount, error)
+type Signer interface {
+	SignTx(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, passphrase string) error
 }
 
 // Distributor is the process
 // that manages sub-account distributions
 type Distributor struct {
-	broadcaster txBroadcaster
-	store       accountStore
-	signer      signer.Signer
+	cli    Client
+	signer Signer
 }
 
 // NewDistributor creates a new instance of the distributor
 func NewDistributor(
-	broadcaster txBroadcaster,
-	store accountStore,
-	signer signer.Signer,
+	cli Client,
+	signer Signer,
 ) *Distributor {
 	return &Distributor{
-		broadcaster: broadcaster,
-		store:       store,
-		signer:      signer,
+		cli:    cli,
+		signer: signer,
 	}
 }
 
@@ -54,10 +51,12 @@ func (d *Distributor) Distribute(
 	accounts []keys.Info,
 	transactions uint64,
 ) ([]*gnoland.GnoAccount, error) {
+	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
+
 	// Calculate the base fees
 	subAccountCost := calculateRuntimeCosts(int64(transactions))
 	fmt.Printf(
-		"Calculated sub-account cost as %d%s\n",
+		"Calculated sub-account cost as %d %s\n",
 		subAccountCost.Amount,
 		subAccountCost.Denom,
 	)
@@ -106,7 +105,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	// before the stress test starts
 	for _, account := range accounts[1:] {
 		// Fetch the account balance
-		subAccount, err := d.store.GetAccount(account.GetAddress().String())
+		subAccount, err := d.cli.GetAccount(account.GetAddress().String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch sub-account, %w", err)
 		}
@@ -144,7 +143,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	})
 
 	// Figure out how many accounts can actually be funded
-	distributor, err := d.store.GetAccount(accounts[0].GetAddress().String())
+	distributor, err := d.cli.GetAccount(accounts[0].GetAddress().String())
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch distributor account, %w", err)
 	}
@@ -209,14 +208,14 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		nonce++
 
 		// Broadcast the tx and wait for it to be committed
-		if err := d.broadcaster.BroadcastTxWithCommit(tx); err != nil {
+		if err := d.cli.BroadcastTransaction(tx); err != nil {
 			return nil, fmt.Errorf("unable to broadcast tx with commit, %w", err)
 		}
 
 		// Since accounts can be uninitialized on the node, after the
 		// transfer they will have acquired a storage slot, and need
 		// to be re-fetched for their data (Sequence + Account Number)
-		nodeAccount, err := d.store.GetAccount(account.address.String())
+		nodeAccount, err := d.cli.GetAccount(account.address.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch account, %w", err)
 		}

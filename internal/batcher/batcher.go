@@ -3,33 +3,48 @@ package batcher
 import (
 	"errors"
 	"fmt"
+	"math"
 
+	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/amino"
-	"github.com/gnolang/gno/pkgs/bft/rpc/client"
 	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
 	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/supernova/internal/common"
 	"github.com/schollz/progressbar/v3"
 )
 
+type Client interface {
+	CreateBatch() common.Batch
+	GetLatestBlockHeight() (int64, error)
+	GetAccount(address string) (*gnoland.GnoAccount, error)
+}
+
+// Batcher batches signed transactions
+// to the Gno Tendermint node
 type Batcher struct {
-	cli *client.HTTP
+	cli Client
 }
 
 // NewBatcher creates a new Batcher instance
-func NewBatcher(cli *client.HTTP) *Batcher {
+func NewBatcher(cli Client) *Batcher {
 	return &Batcher{
 		cli: cli,
 	}
 }
 
-type TxBatchResults struct {
-	TxHashes   [][]byte
-	StartBlock int64
+// TxBatchResult contains batching results
+type TxBatchResult struct {
+	TxHashes   [][]byte // the tx hashes
+	StartBlock int64    // the initial block for querying
 }
 
-func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResults, error) {
+// BatchTransactions batches provided transactions using the
+// specified batch size
+func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResult, error) {
+	fmt.Printf("\n📦 Batching Transactions 📦\n\n")
+
 	// Note the current latest block
-	latest, err := b.getLatestBlock()
+	latest, err := b.cli.GetLatestBlockHeight()
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch latest block %w", err)
 	}
@@ -45,21 +60,51 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 	}
 
 	// Generate the batches
-	batches := generateBatches[[]byte](preparedTxs, batchSize)
-	numBatches := len(batches)
+	readyBatches, err := b.generateBatches(preparedTxs, batchSize)
+	if err != nil {
+		return nil, fmt.Errorf("unable to generate batches, %w", err)
+	}
+
+	// Execute the batch requests.
+	// Batch requests need to be sent out sequentially
+	// to preserve account sequence order
+	batchResults, err := sendBatches(readyBatches)
+	if err != nil {
+		return nil, fmt.Errorf("unable to send batches, %w", err)
+	}
+
+	// Parse the results
+	txHashes, err := parseBatchResults(batchResults, len(txs))
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse batch results, %w", err)
+	}
+
+	fmt.Printf("✅ Successfully sent %d txs in %d batches\n", len(txs), len(readyBatches))
+
+	return &TxBatchResult{
+		TxHashes:   txHashes,
+		StartBlock: latest,
+	}, nil
+}
+
+// generateBatches generates batches of transactions
+func (b *Batcher) generateBatches(txs [][]byte, batchSize int) ([]common.Batch, error) {
+	var (
+		batches      = generateBatches(txs, batchSize)
+		numBatches   = len(batches)
+		readyBatches = make([]common.Batch, numBatches)
+	)
 
 	fmt.Printf("\nGenerating batches...\n")
 
 	bar := progressbar.Default(int64(numBatches), "batches generated")
 
-	readyBatches := make([]*client.BatchHTTP, numBatches)
-
 	for index, batch := range batches {
-		cliBatch := b.cli.NewBatch()
+		cliBatch := b.cli.CreateBatch()
 
 		for _, tx := range batch {
 			// Append the transaction
-			if _, err = cliBatch.BroadcastTxSync(tx); err != nil {
+			if err := cliBatch.AddTxBroadcast(tx); err != nil {
 				return nil, fmt.Errorf("unable to prepare transaction, %w", err)
 			}
 		}
@@ -69,17 +114,41 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 		_ = bar.Add(1)
 	}
 
-	// Execute the batch requests.
-	// Batch requests need to be sent out sequentially
-	// to preserve account sequence order
+	return readyBatches, nil
+}
+
+// prepareTransactions marshals the transactions into amino binary
+func prepareTransactions(txs []*std.Tx) ([][]byte, error) {
+	marshalledTxs := make([][]byte, len(txs))
+	bar := progressbar.Default(int64(len(txs)), "txs prepared")
+
+	for index, tx := range txs {
+		txBin, err := amino.Marshal(tx)
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal tx, %w", err)
+		}
+
+		marshalledTxs[index] = txBin
+
+		_ = bar.Add(1)
+	}
+
+	return marshalledTxs, nil
+}
+
+// sendBatches sends the prepared batch requests
+func sendBatches(readyBatches []common.Batch) ([][]any, error) {
+	var (
+		numBatches   = len(readyBatches)
+		batchResults = make([][]any, numBatches)
+	)
+
 	fmt.Printf("\nSending batches...\n")
 
-	bar = progressbar.Default(int64(numBatches), "batches sent")
-
-	batchResults := make([][]any, numBatches)
+	bar := progressbar.Default(int64(numBatches), "batches sent")
 
 	for index, readyBatch := range readyBatches {
-		batchResult, err := readyBatch.Send()
+		batchResult, err := readyBatch.Execute()
 		if err != nil {
 			return nil, fmt.Errorf("unable to batch request, %w", err)
 		}
@@ -89,16 +158,25 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 		_ = bar.Add(1)
 	}
 
-	// Parse the results.
-	// Parsing is done in a separate loop to not hinder
-	// the batch send speed (as txs need to be parsed sequentially)
+	fmt.Printf("✅ Successfully sent %d batches\n", numBatches)
+
+	return batchResults, nil
+}
+
+// parseBatchResults extracts transaction hashes
+// from batch results
+func parseBatchResults(batchResults [][]any, numTx int) ([][]byte, error) {
+	var (
+		txHashes = make([][]byte, numTx)
+		index    = 0
+	)
+
 	fmt.Printf("\nParsing batch results...\n")
 
-	bar = progressbar.Default(int64(len(txs)), "results parsed")
+	bar := progressbar.Default(int64(numTx), "results parsed")
 
-	txHashes := make([][]byte, len(txs))
-	index := 0
-
+	// Parsing is done in a separate loop to not hinder
+	// the batch send speed (as txs need to be parsed sequentially)
 	for _, batchResult := range batchResults {
 		// For each batch, extract the transaction hashes
 		for _, txResultRaw := range batchResult {
@@ -123,39 +201,31 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 		}
 	}
 
-	fmt.Printf("✅ Successfully sent %d txs in %d batches\n", len(txs), numBatches)
+	fmt.Printf("✅ Successfully parsed %d batch results\n", len(batchResults))
 
-	return &TxBatchResults{
-		TxHashes:   txHashes,
-		StartBlock: latest,
-	}, nil
+	return txHashes, nil
 }
 
-// prepareTransactions marshals the transactions into amino binary
-func prepareTransactions(txs []*std.Tx) ([][]byte, error) {
-	marshalledTxs := make([][]byte, len(txs))
-	bar := progressbar.Default(int64(len(txs)), "txs prepared")
+// generateBatches generates data batches based on passed in params
+func generateBatches(items [][]byte, batchSize int) [][][]byte {
+	numBatches := int(math.Ceil(float64(len(items)) / float64(batchSize)))
+	if numBatches == 0 {
+		numBatches = 1
+	}
 
-	for index, tx := range txs {
-		txBin, err := amino.Marshal(tx)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal tx, %w", err)
+	batches := make([][][]byte, numBatches)
+	for i := 0; i < numBatches; i++ {
+		batches[i] = make([][]byte, 0)
+	}
+
+	currentBatch := 0
+	for _, item := range items {
+		batches[currentBatch] = append(batches[currentBatch], item)
+
+		if len(batches[currentBatch])%batchSize == 0 {
+			currentBatch++
 		}
-
-		marshalledTxs[index] = txBin
-
-		_ = bar.Add(1)
 	}
 
-	return marshalledTxs, nil
-}
-
-// getLatestBlock fetches the latest block height from the chain
-func (b *Batcher) getLatestBlock() (int64, error) {
-	status, err := b.cli.Status()
-	if err != nil {
-		return 0, fmt.Errorf("unable to fetch status, %w", err)
-	}
-
-	return status.SyncInfo.LatestBlockHeight, nil
+	return batches
 }

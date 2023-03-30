@@ -1,20 +1,38 @@
 package internal
 
 import (
+	"errors"
+	"regexp"
+
 	"github.com/gnolang/gno/pkgs/crypto/bip39"
 	"github.com/gnolang/supernova/internal/runtime"
 )
 
-type Config struct {
-	URL      string
-	ChainID  string
-	Mnemonic string
-	Mode     string
-	Output   string
+var (
+	errInvalidURL          = errors.New("invalid node URL specified")
+	errInvalidMnemonic     = errors.New("invalid Mnemonic specified")
+	errInvalidMode         = errors.New("invalid mode specified")
+	errInvalidSubaccounts  = errors.New("invalid number of subaccounts specified")
+	errInvalidTransactions = errors.New("invalid number of transactions specified")
+	errInvalidBatchSize    = errors.New("invalid batch size specified")
+)
 
-	SubAccounts  uint64
-	Transactions uint64
-	BatchSize    uint64
+var (
+	// urlRegex is used for verifying the cluster's JSON-RPC endpoint
+	urlRegex = regexp.MustCompile(`(https?://.*)(:(\d*)\/?(.*))?`)
+)
+
+// Config is the central pipeline configuration
+type Config struct {
+	URL      string // the URL of the cluster
+	ChainID  string // the chain ID of the cluster
+	Mnemonic string // the mnemonic for the keyring
+	Mode     string // the stress test mode
+	Output   string // output path for results JSON, if any
+
+	SubAccounts  uint64 // the number of sub-accounts in the run
+	Transactions uint64 // the total number of transactions
+	BatchSize    uint64 // the maximum size of the batch
 }
 
 // Validate validates the stress-test configuration

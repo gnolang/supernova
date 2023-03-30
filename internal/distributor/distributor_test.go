@@ -10,7 +10,6 @@ import (
 	"github.com/gnolang/gno/pkgs/sdk/bank"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -84,7 +83,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		var (
 			accounts = generateAccounts(t, 10)
 
-			mockStore = &mockAccountStore{
+			mockClient = &mockClient{
 				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
@@ -105,9 +104,8 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			&mockTxBroadcaster{},
-			mockStore,
-			&signer.MockSigner{},
+			mockClient,
+			&mockSigner{},
 		)
 
 		readyAccounts, err := d.Distribute(accounts, numTx)
@@ -136,7 +134,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		var (
 			accounts = generateAccounts(t, 10)
 
-			mockStore = &mockAccountStore{
+			mockClient = &mockClient{
 				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
@@ -157,9 +155,8 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			&mockTxBroadcaster{},
-			mockStore,
-			&signer.MockSigner{},
+			mockClient,
+			&mockSigner{},
 		)
 
 		readyAccounts, err := d.Distribute(accounts, numTx)
@@ -181,14 +178,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			capturedBroadcasts = make([]*std.Tx, 0)
 			capturedNonce      = uint64(0)
 
-			mockBroadcaster = &mockTxBroadcaster{
-				broadcastTxWithCommitFn: func(tx *std.Tx) error {
-					capturedBroadcasts = append(capturedBroadcasts, tx)
-
-					return nil
-				},
-			}
-			mockStore = &mockAccountStore{
+			mockClient = &mockClient{
 				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
@@ -220,9 +210,14 @@ func TestDistributor_Distribute(t *testing.T) {
 						),
 					}, nil
 				},
+				broadcastTransactionFn: func(tx *std.Tx) error {
+					capturedBroadcasts = append(capturedBroadcasts, tx)
+
+					return nil
+				},
 			}
-			mockSigner = &signer.MockSigner{
-				SignTxFn: func(
+			mockSigner = &mockSigner{
+				signTxFn: func(
 					tx *std.Tx,
 					account *gnoland.GnoAccount,
 					nonce uint64,
@@ -248,8 +243,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
-			mockBroadcaster,
-			mockStore,
+			mockClient,
 			mockSigner,
 		)
 

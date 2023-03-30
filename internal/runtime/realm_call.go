@@ -10,7 +10,6 @@ import (
 	"github.com/gnolang/gno/pkgs/sdk/vm"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 )
 
 const (
@@ -18,12 +17,12 @@ const (
 )
 
 type realmCall struct {
-	signer signer.Signer
+	signer Signer
 
 	realmPath string
 }
 
-func newRealmCall(signer signer.Signer) *realmCall {
+func newRealmCall(signer Signer) *realmCall {
 	return &realmCall{
 		signer: signer,
 	}

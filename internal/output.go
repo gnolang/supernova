@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -34,4 +35,31 @@ func displayResults(result *collector.RunResult) {
 	_, _ = fmt.Fprintln(w, "")
 
 	_ = w.Flush()
+}
+
+// saveResults saves the runtime results to a file
+func saveResults(result *collector.RunResult, path string) error {
+	// Marshal the results
+	resultJSON, err := json.Marshal(result)
+	if err != nil {
+		return fmt.Errorf("unable to marshal result, %w", err)
+	}
+
+	// Create the file
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("unable to create file, %w", err)
+	}
+
+	defer func() {
+		_ = f.Close()
+	}()
+
+	// Write to file
+	_, err = f.Write(resultJSON)
+	if err != nil {
+		return fmt.Errorf("unable to write to file, %w", err)
+	}
+
+	return nil
 }

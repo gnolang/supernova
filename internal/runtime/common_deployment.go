@@ -9,17 +9,16 @@ import (
 	"github.com/gnolang/gno/pkgs/gnolang"
 	"github.com/gnolang/gno/pkgs/sdk/vm"
 	"github.com/gnolang/gno/pkgs/std"
-	"github.com/gnolang/supernova/internal/signer"
 )
 
 type commonDeployment struct {
-	signer signer.Signer
+	signer Signer
 
 	deployDir        string
 	deployPathPrefix string
 }
 
-func newCommonDeployment(signer signer.Signer, deployDir, deployPrefix string) *commonDeployment {
+func newCommonDeployment(signer Signer, deployDir, deployPrefix string) *commonDeployment {
 	return &commonDeployment{
 		signer:           signer,
 		deployDir:        deployDir,

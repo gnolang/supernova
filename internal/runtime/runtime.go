@@ -4,7 +4,6 @@ import (
 	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 )
 
 const (
@@ -34,8 +33,12 @@ type Runtime interface {
 	ConstructTransactions(accounts []*gnoland.GnoAccount, transactions uint64) ([]*std.Tx, error)
 }
 
+type Signer interface {
+	SignTx(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, passphrase string) error
+}
+
 // GetRuntime fetches the specified runtime, if any
-func GetRuntime(runtimeType Type, signer signer.Signer) Runtime {
+func GetRuntime(runtimeType Type, signer Signer) Runtime {
 	switch runtimeType {
 	case RealmCall:
 		return newRealmCall(signer)

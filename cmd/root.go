@@ -14,7 +14,7 @@ import (
 func main() {
 	var (
 		cfg = &internal.Config{}
-		fs  = flag.NewFlagSet("", flag.ExitOnError)
+		fs  = flag.NewFlagSet("pipeline", flag.ExitOnError)
 	)
 
 	// Register the flags
@@ -24,8 +24,8 @@ func main() {
 		ShortUsage: "[flags] [<arg>...]",
 		LongHelp:   "Starts the stress testing suite against a Gno TM2 cluster",
 		FlagSet:    fs,
-		Exec: func(ctx context.Context, _ []string) error {
-			return execMain(ctx, cfg)
+		Exec: func(_ context.Context, _ []string) error {
+			return execMain(cfg)
 		},
 	}
 
@@ -99,12 +99,12 @@ func registerFlags(fs *flag.FlagSet, c *internal.Config) {
 }
 
 // execMain starts the stress test workflow (runs the pipeline)
-func execMain(ctx context.Context, cfg *internal.Config) error {
+func execMain(cfg *internal.Config) error {
 	// Validate the configuration
 	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration, %w", err)
 	}
 
 	// Create and run the pipeline
-	return internal.NewPipeline(ctx, cfg).Execute()
+	return internal.NewPipeline(cfg).Execute()
 }

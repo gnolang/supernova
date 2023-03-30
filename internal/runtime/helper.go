@@ -6,7 +6,6 @@ import (
 	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -16,7 +15,7 @@ type msgFn func(creator *gnoland.GnoAccount, index int) std.Msg
 // constructTransactions constructs and signs the transactions
 // using the passed in message generator and signer
 func constructTransactions(
-	signer signer.Signer,
+	signer Signer,
 	accounts []*gnoland.GnoAccount,
 	transactions uint64,
 	getMsg msgFn,
@@ -29,6 +28,8 @@ func constructTransactions(
 		// an account is used
 		nonceMap = make(map[uint64]uint64) // accountNumber -> nonce
 	)
+
+	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
 	bar := progressbar.Default(int64(transactions), "constructing txs")
 

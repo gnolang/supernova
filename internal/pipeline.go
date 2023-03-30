@@ -1,14 +1,11 @@
 package internal
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"regexp"
 
-	"github.com/gnolang/gno/pkgs/bft/rpc/client"
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/supernova/internal/batcher"
+	"github.com/gnolang/supernova/internal/client"
 	"github.com/gnolang/supernova/internal/collector"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
@@ -17,44 +14,102 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var (
-	errInvalidURL          = errors.New("invalid node URL specified")
-	errInvalidMnemonic     = errors.New("invalid Mnemonic specified")
-	errInvalidMode         = errors.New("invalid mode specified")
-	errInvalidSubaccounts  = errors.New("invalid number of subaccounts specified")
-	errInvalidTransactions = errors.New("invalid number of transactions specified")
-	errInvalidBatchSize    = errors.New("invalid batch size specified")
-)
+type pipelineClient interface {
+	distributor.Client
+	batcher.Client
+	collector.Client
+}
 
-var (
-	urlRegex = regexp.MustCompile(`(https?://.*)(:(\d*)\/?(.*))?`)
-)
+type pipelineSigner interface {
+	distributor.Signer
+}
 
+// Pipeline is the central run point
+// for the stress test
 type Pipeline struct {
-	ctx context.Context
+	cfg *Config // the run configuration
 
-	cfg     *Config
-	keybase keys.Keybase
-	cli     client.Client
+	keybase keys.Keybase   // relevant keybase
+	cli     pipelineClient // HTTP client connection
+	signer  pipelineSigner // the transaction signer
 }
 
 // NewPipeline creates a new pipeline instance
-func NewPipeline(ctx context.Context, cfg *Config) *Pipeline {
+func NewPipeline(cfg *Config) *Pipeline {
+	kb := keys.NewInMemory()
+
 	return &Pipeline{
-		ctx:     ctx,
 		cfg:     cfg,
-		keybase: keys.NewInMemory(),
-		cli:     client.NewHTTP(cfg.URL, ""),
+		keybase: kb,
+		cli:     client.NewHTTPClient(cfg.URL),
+		signer:  signer.NewKeybaseSigner(kb, cfg.ChainID),
 	}
 }
 
+// Execute runs the entire pipeline process
 func (p *Pipeline) Execute() error {
+	var (
+		mode = runtime.Type(p.cfg.Mode)
+
+		txBatcher   = batcher.NewBatcher(p.cli)
+		txCollector = collector.NewCollector(p.cli)
+		txRuntime   = runtime.GetRuntime(mode, p.signer)
+	)
+
+	// Initialize the accounts for the runtime
+	accounts, err := p.initializeAccounts()
+	if err != nil {
+		return err
+	}
+
+	// Predeploy any pending transactions
+	if err := prepareRuntime(mode, accounts, p.cli, txRuntime); err != nil {
+		return err
+	}
+
+	// Distribute the funds to sub-accounts
+	runAccounts, err := distributor.NewDistributor(p.cli, p.signer).Distribute(
+		accounts,
+		p.cfg.Transactions,
+	)
+	if err != nil {
+		return fmt.Errorf("unable to distribute funds, %w", err)
+	}
+
+	// Construct the transactions using the runtime
+	txs, err := txRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
+	if err != nil {
+		return fmt.Errorf("unable to construct transactions, %w", err)
+	}
+
+	// Send the signed transactions in batches
+	batchResult, err := txBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
+	if err != nil {
+		return fmt.Errorf("unable to batch transactions %w", err)
+	}
+
+	// Collect the transaction results
+	runResult, err := txCollector.GetRunResult(batchResult.TxHashes, batchResult.StartBlock)
+	if err != nil {
+		return fmt.Errorf("unable to collect transactions, %w", err)
+	}
+
+	// Display [+ save the results]
+	return p.handleResults(runResult)
+}
+
+// initializeAccounts initializes the accounts needed for the stress test run
+func (p *Pipeline) initializeAccounts() ([]keys.Info, error) {
+	fmt.Printf("\n🧮 Initializing Accounts 🧮\n\n")
+
+	var (
+		accounts = make([]keys.Info, p.cfg.SubAccounts+1)
+		bar      = progressbar.Default(int64(p.cfg.SubAccounts+1), "accounts initialized")
+	)
+
+	fmt.Printf("Generating sub-accounts...\n")
+
 	// Register the accounts with the keybase
-	fmt.Printf("\nGenerating sub-accounts...\n")
-
-	accounts := make([]keys.Info, p.cfg.SubAccounts+1)
-	bar := progressbar.Default(int64(p.cfg.SubAccounts+1), "sub-accounts added")
-
 	for i := 0; i < int(p.cfg.SubAccounts)+1; i++ {
 		info, err := p.keybase.CreateAccount(
 			fmt.Sprintf("%s%d", common.KeybasePrefix, i),
@@ -65,95 +120,79 @@ func (p *Pipeline) Execute() error {
 			uint32(i),
 		)
 		if err != nil {
-			return fmt.Errorf("unable to create account with keybase, %w", err)
+			return nil, fmt.Errorf("unable to create account with keybase, %w", err)
 		}
 
 		accounts[i] = info
 		_ = bar.Add(1)
 	}
 
-	var (
-		txSigner       = signer.NewKeybaseSigner(p.keybase, p.cfg.ChainID)
-		requestBatcher = batcher.NewBatcher(client.NewHTTP(p.cfg.URL, ""))
-		accountStore   = newStore(p.cli)
-		txBroadcaster  = newBroadcaster(p.cli)
-	)
+	fmt.Printf("✅ Successfully generated %d accounts\n", len(accounts))
 
-	setRuntime := runtime.GetRuntime(runtime.Type(p.cfg.Mode), txSigner)
+	return accounts, nil
+}
 
-	if runtime.Type(p.cfg.Mode) == runtime.RealmCall {
-		fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
-
-		// Get the deployer account
-		deployer, err := accountStore.GetAccount(accounts[0].GetAddress().String())
-		if err != nil {
-			return fmt.Errorf("unable to fetch deployer account, %w", err)
-		}
-
-		// Get the predeploy transactions
-		predeployTxs, err := setRuntime.Initialize(deployer)
-		if err != nil {
-			return fmt.Errorf("unable to initialize runtime, %w", err)
-		}
-
-		bar := progressbar.Default(int64(len(predeployTxs)), "predeployed txs")
-
-		// Execute the predeploy transactions
-		for _, tx := range predeployTxs {
-			if err := txBroadcaster.BroadcastTxWithCommit(tx); err != nil {
-				return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
-			}
-
-			_ = bar.Add(1)
-		}
-
-		fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
-	}
-
-	// Distribution //
-
-	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
-
-	runAccounts, err := distributor.NewDistributor(
-		txBroadcaster,
-		accountStore,
-		txSigner,
-	).Distribute(
-		accounts,
-		p.cfg.Transactions,
-	)
-	if err != nil {
-		return fmt.Errorf("unable to distribute funds, %w", err)
-	}
-
-	// Runtime //
-
-	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
-
-	txs, err := setRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
-	if err != nil {
-		return fmt.Errorf("unable to construct transactions, %w", err)
-	}
-
-	// Batcher //
-	fmt.Printf("\n📦 Batching Transactions 📦\n\n")
-
-	batchResult, err := requestBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
-	if err != nil {
-		return fmt.Errorf("unable to batch transactions %w", err)
-	}
-
-	// Collector //
-
-	fmt.Printf("\n📊 Collecting Results 📊\n\n")
-
-	runResult, err := collector.NewCollector(p.cli).CollectTransactions(batchResult.TxHashes, batchResult.StartBlock)
-	if err != nil {
-		return fmt.Errorf("unable to collect transactions, %w", err)
-	}
-
-	// Outputter //
+// handleResults displays the results in the terminal,
+// and saves them to disk if an output path was specified
+func (p *Pipeline) handleResults(runResult *collector.RunResult) error {
+	// Display the results in the terminal
 	displayResults(runResult)
+
+	// Check if the results need to be saved to disk
+	if p.cfg.Output == "" {
+		// No disk save necessary
+		return nil
+	}
+
+	fmt.Printf("\n💾 Saving Results 💾\n\n")
+
+	if err := saveResults(runResult, p.cfg.Output); err != nil {
+		return fmt.Errorf("unable to save results, %w", err)
+	}
+
+	fmt.Printf("✅ Successfully saved results to %s\n", p.cfg.Output)
+
+	return nil
+}
+
+// prepareRuntime prepares the runtime by pre-deploying
+// any pending transactions
+func prepareRuntime(
+	mode runtime.Type,
+	accounts []keys.Info,
+	cli pipelineClient,
+	txRuntime runtime.Runtime,
+) error {
+	if mode != runtime.RealmCall {
+		return nil
+	}
+
+	fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
+
+	// Get the deployer account
+	deployer, err := cli.GetAccount(accounts[0].GetAddress().String())
+	if err != nil {
+		return fmt.Errorf("unable to fetch deployer account, %w", err)
+	}
+
+	// Get the predeploy transactions
+	predeployTxs, err := txRuntime.Initialize(deployer)
+	if err != nil {
+		return fmt.Errorf("unable to initialize runtime, %w", err)
+	}
+
+	bar := progressbar.Default(int64(len(predeployTxs)), "predeployed txs")
+
+	// Execute the predeploy transactions
+	for _, tx := range predeployTxs {
+		if err := cli.BroadcastTransaction(tx); err != nil {
+			return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
+		}
+
+		_ = bar.Add(1)
+	}
+
+	fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
 
 	return nil
 }
