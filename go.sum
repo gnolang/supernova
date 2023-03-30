@@ -57,8 +57,8 @@ github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/gnolang/cors v1.8.1 h1:D3y1DMoWcgGpCefHwD4UHjy1w1163sfczZyy7b5wH8o=
 github.com/gnolang/cors v1.8.1/go.mod h1:g7HJhHH+N1r+oRrb7ckR2J6xp5es4EizpAP0JpfgVgU=
-github.com/gnolang/gno v0.0.0-20230323200218-a2966a768547 h1:lz1CguycFRtXmf/WmoLI6qwHlTK8WjPA/S2BeVSMJ6o=
-github.com/gnolang/gno v0.0.0-20230323200218-a2966a768547/go.mod h1:bFwQa7aJfP26vxLLpfSAOHjvI63aEBMpMpQkHiY5H/k=
+github.com/gnolang/gno v0.0.0-20230330135006-28c1984fb1cd h1:AXt99s6j/P/YGiXQABGgCsMaL1TRcoKbnlaITwRdmx0=
+github.com/gnolang/gno v0.0.0-20230330135006-28c1984fb1cd/go.mod h1:bFwQa7aJfP26vxLLpfSAOHjvI63aEBMpMpQkHiY5H/k=
 github.com/gnolang/overflow v0.0.0-20170615021017-4d914c927216 h1:GKvsK3oLWG9B1GL7WP/VqwM6C92j5tIvB844oggL9Lk=
 github.com/gnolang/overflow v0.0.0-20170615021017-4d914c927216/go.mod h1:xJhtEL7ahjM1WJipt89gel8tHzfIl/LyMY+lCYh38d8=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=

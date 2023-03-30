@@ -29,7 +29,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/gnolang/cors v1.8.1 // indirect
-	github.com/gnolang/gno v0.0.0-20230323200218-a2966a768547
+	github.com/gnolang/gno v0.0.0-20230330135006-28c1984fb1cd
 	github.com/gnolang/overflow v0.0.0-20170615021017-4d914c927216 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect

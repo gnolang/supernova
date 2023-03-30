@@ -171,7 +171,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		// The distributor does not have funds to fund
 		// any account for the stress test
 		fmt.Printf(
-			"❌ Distributor cannot fund any account, balance is %d%s\n",
+			"❌ Distributor cannot fund any account, balance is %d %s\n",
 			distributorBalance.AmountOf(common.Denomination),
 			common.Denomination,
 		)

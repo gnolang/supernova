@@ -9,6 +9,7 @@ import (
 	"github.com/gnolang/gno/pkgs/bft/rpc/client"
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/supernova/internal/batcher"
+	"github.com/gnolang/supernova/internal/collector"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
 	"github.com/gnolang/supernova/internal/runtime"
@@ -137,14 +138,22 @@ func (p *Pipeline) Execute() error {
 	// Batcher //
 	fmt.Printf("\n📦 Batching Transactions 📦\n\n")
 
-	_, err = requestBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
+	batchResult, err := requestBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
 	if err != nil {
 		return fmt.Errorf("unable to batch transactions %w", err)
 	}
 
 	// Collector //
 
-	// TODO
+	fmt.Printf("\n📊 Collecting Results 📊\n\n")
+
+	runResult, err := collector.NewCollector(p.cli).CollectTransactions(batchResult.TxHashes, batchResult.StartBlock)
+	if err != nil {
+		return fmt.Errorf("unable to collect transactions, %w", err)
+	}
+
+	// Outputter //
+	displayResults(runResult)
 
 	return nil
 }
