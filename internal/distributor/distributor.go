@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/gnolang/gno/gnoland"
+	"github.com/gnolang/gno/pkgs/crypto"
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/gno/pkgs/sdk/bank"
 	"github.com/gnolang/gno/pkgs/std"
@@ -89,7 +90,7 @@ func calculateRuntimeCosts(totalTx int64) std.Coin {
 // and returns the accounts that can participate in the stress test
 func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin) ([]*gnoland.GnoAccount, error) {
 	type shortAccount struct {
-		account      *gnoland.GnoAccount
+		address      crypto.Address
 		missingFunds std.Coin
 	}
 
@@ -112,12 +113,9 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 
 		// Check if it has enough funds for the run
 		if subAccount.Coins.AmountOf(common.Denomination) < singleRunCost.Amount {
-			// TODO temporary fix
-			subAccount.Address = account.GetAddress()
-
 			// Mark the account as needing a top-up
 			shortAccounts = append(shortAccounts, shortAccount{
-				account: subAccount,
+				address: account.GetAddress(),
 				missingFunds: std.Coin{
 					Denom:  common.Denomination,
 					Amount: singleRunCost.Amount - subAccount.Coins.AmountOf(common.Denomination),
@@ -195,7 +193,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 			Msgs: []std.Msg{
 				bank.MsgSend{
 					FromAddress: distributor.GetAddress(),
-					ToAddress:   account.account.GetAddress(),
+					ToAddress:   account.address,
 					Amount:      std.NewCoins(account.missingFunds),
 				},
 			},
@@ -215,8 +213,16 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 			return nil, fmt.Errorf("unable to broadcast tx with commit, %w", err)
 		}
 
+		// Since accounts can be uninitialized on the node, after the
+		// transfer they will have acquired a storage slot, and need
+		// to be re-fetched for their data (Sequence + Account Number)
+		nodeAccount, err := d.store.GetAccount(account.address.String())
+		if err != nil {
+			return nil, fmt.Errorf("unable to fetch account, %w", err)
+		}
+
 		// Mark the account as funded
-		readyAccounts = append(readyAccounts, account.account)
+		readyAccounts = append(readyAccounts, nodeAccount)
 
 		_ = bar.Add(1)
 	}

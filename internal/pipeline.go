@@ -8,6 +8,7 @@ import (
 
 	"github.com/gnolang/gno/pkgs/bft/rpc/client"
 	"github.com/gnolang/gno/pkgs/crypto/keys"
+	"github.com/gnolang/supernova/internal/batcher"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
 	"github.com/gnolang/supernova/internal/runtime"
@@ -71,9 +72,10 @@ func (p *Pipeline) Execute() error {
 	}
 
 	var (
-		txSigner      = signer.NewKeybaseSigner(p.keybase, p.cfg.ChainID)
-		accountStore  = newStore(p.cli)
-		txBroadcaster = newBroadcaster(p.cli)
+		txSigner       = signer.NewKeybaseSigner(p.keybase, p.cfg.ChainID)
+		requestBatcher = batcher.NewBatcher(client.NewHTTP(p.cfg.URL, ""))
+		accountStore   = newStore(p.cli)
+		txBroadcaster  = newBroadcaster(p.cli)
 	)
 
 	setRuntime := runtime.GetRuntime(runtime.Type(p.cfg.Mode), txSigner)
@@ -127,14 +129,18 @@ func (p *Pipeline) Execute() error {
 
 	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
-	_, err = setRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
+	txs, err := setRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
 	if err != nil {
 		return fmt.Errorf("unable to construct transactions, %w", err)
 	}
 
 	// Batcher //
+	fmt.Printf("\n📦 Batching Transactions 📦\n\n")
 
-	// TODO
+	_, err = requestBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
+	if err != nil {
+		return fmt.Errorf("unable to batch transactions %w", err)
+	}
 
 	// Collector //
 
