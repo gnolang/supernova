@@ -5,19 +5,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/gnolang/gno/gnoland"
 	"github.com/gnolang/gno/pkgs/amino"
 	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
 	"github.com/gnolang/gno/pkgs/std"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/schollz/progressbar/v3"
 )
-
-type Client interface {
-	CreateBatch() common.Batch
-	GetLatestBlockHeight() (int64, error)
-	GetAccount(address string) (*gnoland.GnoAccount, error)
-}
 
 // Batcher batches signed transactions
 // to the Gno Tendermint node
@@ -30,12 +23,6 @@ func NewBatcher(cli Client) *Batcher {
 	return &Batcher{
 		cli: cli,
 	}
-}
-
-// TxBatchResult contains batching results
-type TxBatchResult struct {
-	TxHashes   [][]byte // the tx hashes
-	StartBlock int64    // the initial block for querying
 }
 
 // BatchTransactions batches provided transactions using the
@@ -87,6 +74,25 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 	}, nil
 }
 
+// prepareTransactions marshals the transactions into amino binary
+func prepareTransactions(txs []*std.Tx) ([][]byte, error) {
+	marshalledTxs := make([][]byte, len(txs))
+	bar := progressbar.Default(int64(len(txs)), "txs prepared")
+
+	for index, tx := range txs {
+		txBin, err := amino.Marshal(tx)
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal tx, %w", err)
+		}
+
+		marshalledTxs[index] = txBin
+
+		_ = bar.Add(1)
+	}
+
+	return marshalledTxs, nil
+}
+
 // generateBatches generates batches of transactions
 func (b *Batcher) generateBatches(txs [][]byte, batchSize int) ([]common.Batch, error) {
 	var (
@@ -115,25 +121,6 @@ func (b *Batcher) generateBatches(txs [][]byte, batchSize int) ([]common.Batch, 
 	}
 
 	return readyBatches, nil
-}
-
-// prepareTransactions marshals the transactions into amino binary
-func prepareTransactions(txs []*std.Tx) ([][]byte, error) {
-	marshalledTxs := make([][]byte, len(txs))
-	bar := progressbar.Default(int64(len(txs)), "txs prepared")
-
-	for index, tx := range txs {
-		txBin, err := amino.Marshal(tx)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal tx, %w", err)
-		}
-
-		marshalledTxs[index] = txBin
-
-		_ = bar.Add(1)
-	}
-
-	return marshalledTxs, nil
 }
 
 // sendBatches sends the prepared batch requests

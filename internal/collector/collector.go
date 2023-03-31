@@ -6,7 +6,6 @@ import (
 	"math"
 	"time"
 
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
 	"github.com/gnolang/gno/pkgs/bft/types"
 	"github.com/schollz/progressbar/v3"
 )
@@ -14,13 +13,6 @@ import (
 var (
 	errTimeout = errors.New("collector timed out")
 )
-
-type Client interface {
-	GetBlock(height *int64) (*core_types.ResultBlock, error)
-	GetBlockGasUsed(height int64) (int64, error)
-	GetBlockGasLimit(height int64) (int64, error)
-	GetLatestBlockHeight() (int64, error)
-}
 
 // Collector is the transaction / block stat
 // collector.
