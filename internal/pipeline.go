@@ -103,7 +103,7 @@ func (p *Pipeline) initializeAccounts() ([]keys.Info, error) {
 	fmt.Printf("\n🧮 Initializing Accounts 🧮\n\n")
 
 	fmt.Printf("Generating sub-accounts...\n")
-	
+
 	var (
 		accounts = make([]keys.Info, p.cfg.SubAccounts+1)
 		bar      = progressbar.Default(int64(p.cfg.SubAccounts+1), "accounts initialized")
