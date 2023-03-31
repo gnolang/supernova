@@ -17,7 +17,8 @@ and report on node performance by executing transactions and measuring response-
 To run a stress test with `supernova`, you will need to have `go 1.19` or greater.
 
 1. Build out the binary
-   To build out the binary, run the following command:
+
+To build out the binary, run the following command:
 
 ```bash
 make build
