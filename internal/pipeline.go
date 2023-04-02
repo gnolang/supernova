@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gnolang/gno/pkgs/crypto/keys"
 	"github.com/gnolang/supernova/internal/batcher"
@@ -83,13 +84,19 @@ func (p *Pipeline) Execute() error {
 	}
 
 	// Send the signed transactions in batches
+	batchStart := time.Now()
+
 	batchResult, err := txBatcher.BatchTransactions(txs, int(p.cfg.BatchSize))
 	if err != nil {
 		return fmt.Errorf("unable to batch transactions %w", err)
 	}
 
 	// Collect the transaction results
-	runResult, err := txCollector.GetRunResult(batchResult.TxHashes, batchResult.StartBlock)
+	runResult, err := txCollector.GetRunResult(
+		batchResult.TxHashes,
+		batchResult.StartBlock,
+		batchStart,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to collect transactions, %w", err)
 	}

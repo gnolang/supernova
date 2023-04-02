@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	defaultDeployTxFee = std.NewFee(600000, common.DefaultGasFee)
+	defaultDeployTxFee = std.NewFee(165000, common.DefaultGasFee)
 )
 
 // Runtime is the base interface for all runtime

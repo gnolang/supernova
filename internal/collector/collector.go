@@ -33,7 +33,11 @@ func NewCollector(cli Client) *Collector {
 }
 
 // GetRunResult generates the run result for the passed in transaction hashes and start range
-func (c *Collector) GetRunResult(txHashes [][]byte, startBlock int64) (*RunResult, error) {
+func (c *Collector) GetRunResult(
+	txHashes [][]byte,
+	startBlock int64,
+	startTime time.Time,
+) (*RunResult, error) {
 	var (
 		blockResults = make([]*BlockResult, 0)
 		timeout      = time.After(5 * time.Minute)
@@ -113,7 +117,7 @@ func (c *Collector) GetRunResult(txHashes [][]byte, startBlock int64) (*RunResul
 
 	return &RunResult{
 		AverageTPS: calculateTPS(
-			blockResults[0].Time,
+			startTime,
 			blockResults[len(blockResults)-1].Time,
 			len(txHashes),
 		),

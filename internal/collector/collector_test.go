@@ -105,7 +105,7 @@ func TestCollector_GetRunResults(t *testing.T) {
 	c.requestTimeout = time.Second * 0
 
 	// Collect the results
-	result, err := c.GetRunResult(txHashes, 1)
+	result, err := c.GetRunResult(txHashes, 1, startTime)
 	if err != nil {
 		t.Fatalf("unable to get run results, %v", err)
 	}

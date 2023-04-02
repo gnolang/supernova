@@ -50,7 +50,7 @@ func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		Fee:  std.NewFee(600000, common.DefaultGasFee),
+		Fee:  defaultDeployTxFee,
 	}
 
 	// Sign it
