@@ -27,7 +27,7 @@ make build
 2. Run the stress test by specifying options
 
 ```bash
-./build/supernova -sub-accounts 5 -transactions 100 -url http://localhost:26657 -mnemonic "coyote brisk wagon cable quit opera mesh replace response scheme jelly adult income avoid box mass coil crash sort float salad dolphin blouse humor" -output result.json
+./build/supernova -sub-accounts 5 -transactions 100 -url http://localhost:26657 -mnemonic "source bonus chronic canvas draft south burst lottery vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast" -output result.json
 ```
 
 This will run a stress test against a Gno TM2 node running at `http://localhost:26657`. The test will use `5`
