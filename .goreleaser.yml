@@ -1,0 +1,9 @@
+project_name: supernova
+builds:
+  - main: ./cmd
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
