@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           workdir: ${{ env.working-directory }}
           version: 1.13.0
