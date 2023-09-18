@@ -12,6 +12,10 @@ and report on node performance by executing transactions and measuring response-
 - 📊 Detailed statistics calculation
 - 📈 Output cycle run results to a file
 
+## Results
+
+To view the results of the stress tests, visit the [benchmarks reports for supernova](https://github.com/gnolang/benchmarks/tree/main/reports/supernova).
+
 ## Usage Example
 
 To run a stress test with `supernova`, you will need to have `go 1.19` or greater.
