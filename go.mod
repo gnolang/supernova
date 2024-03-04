@@ -6,7 +6,7 @@ require github.com/peterbourgon/ff/v3 v3.4.0
 
 require (
 	github.com/schollz/progressbar/v3 v3.14.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
