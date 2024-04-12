@@ -7,6 +7,9 @@ build:
 	@echo "Building supernova binary"
 	go build -o build/supernova ./cmd
 
+test:
+	go test -v ./...
+
 .PHONY: lint
 lint:
 	$(golangci_lint) run --config .golangci.yaml
