@@ -34,6 +34,10 @@ linters:
     - errorlint # errorlint is a linter for that can be used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13
     - unused # Checks Go code for unused constants, variables, functions and types
 
+issues:
+  exclude-files:
+    - tools/tools.go
+
 linters-settings:
   gofmt:
     simplify: true

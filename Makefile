@@ -1,3 +1,5 @@
+golangci_lint := go run -modfile=./tools/go.mod github.com/golangci/golangci-lint/cmd/golangci-lint
+
 all: build
 
 .PHONY: build
@@ -7,4 +9,4 @@ build:
 
 .PHONY: lint
 lint:
-	golangci-lint run --config .golangci.yaml
+	$(golangci_lint) run --config .golangci.yaml
