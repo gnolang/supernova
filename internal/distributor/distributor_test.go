@@ -267,6 +267,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		}
 
 		sendType := bank.MsgSend{}.Type()
+
 		for _, tx := range capturedBroadcasts {
 			if len(tx.Msgs) != 1 {
 				t.Fatal("invalid number of messages")
