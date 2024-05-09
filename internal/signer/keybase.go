@@ -3,9 +3,9 @@ package signer
 import (
 	"fmt"
 
-	"github.com/gnolang/gno/gnoland"
-	"github.com/gnolang/gno/pkgs/crypto/keys"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/crypto/keys"
+	"github.com/gnolang/gno/tm2/pkg/std"
 )
 
 type KeybaseSigner struct {
@@ -41,10 +41,15 @@ func (s *KeybaseSigner) SignTx(
 	}
 
 	// Generate the signature
+	sigBytes, err := tx.GetSignBytes(s.chainID, account.AccountNumber, nonce)
+	if err != nil {
+		return fmt.Errorf("unable to get tx sign bytes, %w", err)
+	}
+
 	signature, pub, err := s.keybase.Sign(
 		account.GetAddress().String(),
 		passphrase,
-		tx.GetSignBytes(s.chainID, account.AccountNumber, nonce),
+		sigBytes,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to sign transaction, %w", err)

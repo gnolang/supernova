@@ -1,22 +1,23 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/gnolang/gno/gnoland"
-	"github.com/gnolang/gno/pkgs/amino"
-	"github.com/gnolang/gno/pkgs/bft/rpc/client"
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/amino"
+	"github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
+	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 )
 
 type Batch struct {
-	batch *client.BatchHTTP
+	batch *client.RPCBatch
 }
 
 func (b *Batch) AddTxBroadcast(tx []byte) error {
-	if _, err := b.batch.BroadcastTxSync(tx); err != nil {
+	if err := b.batch.BroadcastTxSync(tx); err != nil {
 		return fmt.Errorf("unable to prepare transaction, %w", err)
 	}
 
@@ -24,18 +25,23 @@ func (b *Batch) AddTxBroadcast(tx []byte) error {
 }
 
 func (b *Batch) Execute() ([]interface{}, error) {
-	return b.batch.Send()
+	return b.batch.Send(context.Background())
 }
 
 type HTTPClient struct {
-	conn *client.HTTP
+	conn *client.RPCClient
 }
 
 // NewHTTPClient creates a new instance of the HTTP client
-func NewHTTPClient(url string) *HTTPClient {
-	return &HTTPClient{
-		conn: client.NewHTTP(url, ""),
+func NewHTTPClient(url string) (*HTTPClient, error) {
+	cli, err := client.NewHTTPClient(url)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create http client, %w", err)
 	}
+
+	return &HTTPClient{
+		conn: cli,
+	}, nil
 }
 
 func (h *HTTPClient) CreateBatch() common.Batch {

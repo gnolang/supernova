@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/gnolang/gno/pkgs/amino"
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/tm2/pkg/amino"
+	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/schollz/progressbar/v3"
 )

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/gnolang/gno/gnoland"
-	"github.com/gnolang/gno/pkgs/crypto"
-	"github.com/gnolang/gno/pkgs/crypto/keys"
-	"github.com/gnolang/gno/pkgs/sdk/bank"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
+	"github.com/gnolang/gno/tm2/pkg/crypto/keys"
+	"github.com/gnolang/gno/tm2/pkg/sdk/bank"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/schollz/progressbar/v3"
 )

@@ -1,8 +1,8 @@
 package runtime
 
 import (
-	"github.com/gnolang/gno/gnoland"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 )
 

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
-	"github.com/gnolang/gno/pkgs/std"
+	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 	"github.com/stretchr/testify/assert"
 )

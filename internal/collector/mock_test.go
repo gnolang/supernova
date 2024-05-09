@@ -1,6 +1,6 @@
 package collector
 
-import core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
+import core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
 
 type (
 	getBlockDelegate             func(height *int64) (*core_types.ResultBlock, error)

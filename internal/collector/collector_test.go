@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
-	"github.com/gnolang/gno/pkgs/bft/types"
-	"github.com/gnolang/gno/pkgs/crypto/tmhash"
+	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
+	"github.com/gnolang/gno/tm2/pkg/bft/types"
+	"github.com/gnolang/gno/tm2/pkg/crypto/tmhash"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/gnolang/gno/pkgs/sdk/vm"
-	"github.com/gnolang/gno/pkgs/std"
+	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/stretchr/testify/assert"
 )
 

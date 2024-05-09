@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gnolang/gno/pkgs/crypto/keys"
+	"github.com/gnolang/gno/tm2/pkg/crypto/keys"
 	"github.com/gnolang/supernova/internal/batcher"
 	"github.com/gnolang/supernova/internal/client"
 	"github.com/gnolang/supernova/internal/collector"
@@ -36,15 +36,20 @@ type Pipeline struct {
 }
 
 // NewPipeline creates a new pipeline instance
-func NewPipeline(cfg *Config) *Pipeline {
+func NewPipeline(cfg *Config) (*Pipeline, error) {
 	kb := keys.NewInMemory()
+
+	cli, err := client.NewHTTPClient(cfg.URL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create HTTP client, %w", err)
+	}
 
 	return &Pipeline{
 		cfg:     cfg,
 		keybase: kb,
-		cli:     client.NewHTTPClient(cfg.URL),
+		cli:     cli,
 		signer:  signer.NewKeybaseSigner(kb, cfg.ChainID),
-	}
+	}, nil
 }
 
 // Execute runs the entire pipeline process

@@ -106,5 +106,10 @@ func execMain(cfg *internal.Config) error {
 	}
 
 	// Create and run the pipeline
-	return internal.NewPipeline(cfg).Execute()
+	pipeline, err := internal.NewPipeline(cfg)
+	if err != nil {
+		return fmt.Errorf("unable to create pipeline, %w", err)
+	}
+
+	return pipeline.Execute()
 }

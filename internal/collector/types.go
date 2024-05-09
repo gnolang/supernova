@@ -3,7 +3,7 @@ package collector
 import (
 	"time"
 
-	core_types "github.com/gnolang/gno/pkgs/bft/rpc/core/types"
+	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
 )
 
 type Client interface {

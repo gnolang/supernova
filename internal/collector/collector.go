@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/gnolang/gno/pkgs/bft/types"
+	"github.com/gnolang/gno/tm2/pkg/bft/types"
 	"github.com/schollz/progressbar/v3"
 )
 

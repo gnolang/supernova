@@ -4,7 +4,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/gnolang/gno/pkgs/crypto/bip39"
+	"github.com/gnolang/gno/tm2/pkg/crypto/bip39"
 	"github.com/gnolang/supernova/internal/runtime"
 )
 
