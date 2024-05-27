@@ -22,6 +22,7 @@ require (
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
+	go.etcd.io/bbolt v1.3.9 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.25.0 // indirect
 	go.opentelemetry.io/otel/metric v1.25.0 // indirect
@@ -40,14 +41,13 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
-	github.com/gnolang/gno v0.0.0-20240509142750-711f4d03a167
+	github.com/gnolang/gno v0.1.0-nightly.20240523
 	github.com/gnolang/overflow v0.0.0-20170615021017-4d914c927216 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
-	github.com/linxGnu/grocksdb v1.7.15 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/onsi/gomega v1.31.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
