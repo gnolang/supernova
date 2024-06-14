@@ -54,14 +54,14 @@ USAGE
 Starts the stress testing suite against a Gno TM2 cluster
 
 FLAGS
-  -batch 20               the batch size of JSON-RPC transactions
+  -batch 100              the batch size of JSON-RPC transactions
   -chain-id dev           the chain ID of the Gno blockchain
-  -mnemonic ...           the mnemonic used to generate sub-accounts
+  -mnemonic string        the mnemonic used to generate sub-accounts
   -mode REALM_DEPLOYMENT  the mode for the stress test. Possible modes: [REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL]
-  -output ...             the output path for the results JSON
+  -output string          the output path for the results JSON
   -sub-accounts 10        the number of sub-accounts that will send out transactions
   -transactions 100       the total number of transactions to be emitted
-  -url ...                the JSON-RPC URL of the cluster
+  -url string             the JSON-RPC URL of the cluster
 ```
 
 ## Modes

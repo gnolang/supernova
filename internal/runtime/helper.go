@@ -3,21 +3,22 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
-	"github.com/gnolang/supernova/internal/common"
+	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
 // msgFn defines the transaction message constructor
-type msgFn func(creator *gnoland.GnoAccount, index int) std.Msg
+type msgFn func(creator std.Account, index int) std.Msg
 
 // constructTransactions constructs and signs the transactions
 // using the passed in message generator and signer
 func constructTransactions(
-	signer Signer,
-	accounts []*gnoland.GnoAccount,
+	keys []crypto.PrivKey,
+	accounts []std.Account,
 	transactions uint64,
+	chainID string,
 	getMsg msgFn,
 ) ([]*std.Tx, error) {
 	var (
@@ -35,7 +36,11 @@ func constructTransactions(
 
 	for i := 0; i < int(transactions); i++ {
 		// Generate the transaction
-		creator := accounts[i%len(accounts)]
+		var (
+			creator       = accounts[i%len(accounts)]
+			creatorKey    = keys[i%len(accounts)]
+			accountNumber = creator.GetAccountNumber()
+		)
 
 		tx := &std.Tx{
 			Msgs: []std.Msg{getMsg(creator, i)},
@@ -43,19 +48,25 @@ func constructTransactions(
 		}
 
 		// Fetch the next account nonce
-		nonce, found := nonceMap[creator.AccountNumber]
+		nonce, found := nonceMap[creator.GetAccountNumber()]
 		if !found {
-			nonce = creator.Sequence
-			nonceMap[creator.AccountNumber] = nonce
+			nonce = creator.GetSequence()
+			nonceMap[creator.GetAccountNumber()] = nonce
 		}
 
 		// Sign the transaction
-		if err := signer.SignTx(tx, creator, nonce, common.EncryptPassword); err != nil {
+		cfg := signer.SignCfg{
+			ChainID:       chainID,
+			AccountNumber: accountNumber,
+			Sequence:      nonce,
+		}
+
+		if err := signer.SignTx(tx, creatorKey, cfg); err != nil {
 			return nil, fmt.Errorf("unable to sign transaction, %w", err)
 		}
 
 		// Increase the creator nonce locally
-		nonceMap[creator.AccountNumber] = nonce + 1
+		nonceMap[accountNumber] = nonce + 1
 
 		// Mark the transaction as ready
 		txs[i] = tx

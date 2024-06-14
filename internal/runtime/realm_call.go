@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/gnovm/pkg/gnolang"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
-	"github.com/gnolang/supernova/internal/common"
+	"github.com/gnolang/supernova/internal/signer"
 )
 
 const (
@@ -17,18 +17,14 @@ const (
 )
 
 type realmCall struct {
-	signer Signer
-
 	realmPath string
 }
 
-func newRealmCall(signer Signer) *realmCall {
-	return &realmCall{
-		signer: signer,
-	}
+func newRealmCall() *realmCall {
+	return &realmCall{}
 }
 
-func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
+func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID string) ([]*std.Tx, error) {
 	// Get absolute path to folder
 	deployPathAbs, err := filepath.Abs(realmLocation)
 	if err != nil {
@@ -54,7 +50,13 @@ func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
 	}
 
 	// Sign it
-	if err := r.signer.SignTx(tx, account, account.Sequence, common.EncryptPassword); err != nil {
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: account.GetAccountNumber(),
+		Sequence:      account.GetSequence(),
+	}
+
+	if err := signer.SignTx(tx, key, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
@@ -62,12 +64,14 @@ func (r *realmCall) Initialize(account *gnoland.GnoAccount) ([]*std.Tx, error) {
 }
 
 func (r *realmCall) ConstructTransactions(
-	accounts []*gnoland.GnoAccount,
+	keys []crypto.PrivKey,
+	accounts []std.Account,
 	transactions uint64,
+	chainID string,
 ) ([]*std.Tx, error) {
-	getMsgFn := func(creator *gnoland.GnoAccount, index int) std.Msg {
+	getMsgFn := func(creator std.Account, index int) std.Msg {
 		return vm.MsgCall{
-			Caller:  creator.Address,
+			Caller:  creator.GetAddress(),
 			PkgPath: r.realmPath,
 			Func:    methodName,
 			Args:    []string{fmt.Sprintf("Account-%d", index)},
@@ -75,9 +79,10 @@ func (r *realmCall) ConstructTransactions(
 	}
 
 	return constructTransactions(
-		r.signer,
+		keys,
 		accounts,
 		transactions,
+		chainID,
 		getMsgFn,
 	)
 }

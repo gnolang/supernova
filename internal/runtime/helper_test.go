@@ -6,12 +6,14 @@ import (
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // generateAccounts generates mock gno accounts
-func generateAccounts(count int) []*gnoland.GnoAccount {
-	accounts := make([]*gnoland.GnoAccount, count)
+func generateAccounts(count int) []std.Account {
+	accounts := make([]std.Account, count)
 
 	for i := 0; i < count; i++ {
 		accounts[i] = &gnoland.GnoAccount{
@@ -27,53 +29,33 @@ func generateAccounts(count int) []*gnoland.GnoAccount {
 func TestHelper_ConstructTransactions(t *testing.T) {
 	t.Parallel()
 
-	accounts := generateAccounts(10)
-	nonceMap := make(map[uint64]uint64, len(accounts))
+	var (
+		accounts    = generateAccounts(10)
+		accountKeys = testutils.GenerateAccounts(t, 10)
+		nonceMap    = make(map[uint64]uint64, len(accounts))
+	)
 
 	// Initialize the nonce map
 	for _, account := range accounts {
-		nonceMap[account.AccountNumber] = 0
+		nonceMap[account.GetAccountNumber()] = 0
 	}
 
 	var (
-		transactions  = uint64(100)
-		capturedSigns = make([]*std.Tx, 0, transactions)
-		msg           = vm.MsgAddPackage{}
+		transactions = uint64(100)
+		msg          = vm.MsgAddPackage{}
 
-		mockSigner = &mockSigner{
-			signTxFn: func(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, _ string) error {
-				// Make sure the nonce is being incremented
-				if nonce != nonceMap[account.AccountNumber] {
-					t.Fatalf("invalid nonce for account")
-				}
-
-				capturedSigns = append(capturedSigns, tx)
-				nonceMap[account.AccountNumber]++
-
-				return nil
-			},
-		}
-		getMsgFn = func(creator *gnoland.GnoAccount, index int) std.Msg {
+		getMsgFn = func(creator std.Account, index int) std.Msg {
 			return msg
 		}
 	)
 
-	txs, err := constructTransactions(mockSigner, accounts, transactions, getMsgFn)
-	if err != nil {
-		t.Fatalf("unable to construct transactions, %v", err)
-	}
+	txs, err := constructTransactions(accountKeys, accounts, transactions, "dummy", getMsgFn)
+	require.NoError(t, err)
 
-	if len(txs) != int(transactions) {
-		t.Fatalf("invalid number of transactions, %d", len(txs))
-	}
-
-	// Make sure each transaction was signed
-	if len(capturedSigns) != int(transactions) {
-		t.Fatalf("invalid number of transactions signed, %d", len(txs))
-	}
+	assert.Len(t, txs, int(transactions))
 
 	// Make sure the constructed transactions are valid
-	for index, tx := range txs {
+	for _, tx := range txs {
 		// Make sure the fee is valid
 		assert.Equal(t, defaultDeployTxFee, tx.Fee)
 
@@ -83,7 +65,6 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		}
 
 		assert.Equal(t, msg, tx.Msgs[0])
-
-		assert.Equal(t, capturedSigns[index], tx)
+		assert.NotEmpty(t, tx.Msgs[0].GetSigners())
 	}
 }

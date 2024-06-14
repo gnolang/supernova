@@ -14,7 +14,7 @@ func displayResults(result *collector.RunResult) {
 	w := tabwriter.NewWriter(os.Stdout, 10, 20, 2, ' ', 0)
 
 	// TPS //
-	_, _ = fmt.Fprintln(w, fmt.Sprintf("\nTPS: %d", result.AverageTPS))
+	_, _ = fmt.Fprintln(w, fmt.Sprintf("\nTPS: %.2f", result.AverageTPS))
 
 	// Block info //
 	_, _ = fmt.Fprintln(w, "\nBlock #\tGas Used\tGas Limit\tTransactions\tUtilization")

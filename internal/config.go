@@ -18,8 +18,11 @@ var (
 )
 
 var (
-	// urlRegex is used for verifying the cluster's JSON-RPC endpoint
-	urlRegex = regexp.MustCompile(`(https?://.*)(:(\d*)\/?(.*))?`)
+	// httpRegex is used for verifying the cluster's JSON-RPC HTTP endpoint
+	httpRegex = regexp.MustCompile(`(https?://.*)(:(\d*)\/?(.*))?`)
+
+	// wsRegex is used for verifying the cluster's JSON-RPC WS endpoint
+	wsRegex = regexp.MustCompile(`(wss?://.*)(:(\d*)\/?(.*))?`)
 )
 
 // Config is the central pipeline configuration
@@ -38,7 +41,8 @@ type Config struct {
 // Validate validates the stress-test configuration
 func (cfg *Config) Validate() error {
 	// Make sure the URL is valid
-	if !urlRegex.MatchString(cfg.URL) {
+	if !httpRegex.MatchString(cfg.URL) &&
+		!wsRegex.MatchString(cfg.URL) {
 		return errInvalidURL
 	}
 

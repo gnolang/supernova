@@ -5,35 +5,34 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/gnovm/pkg/gnolang"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
 
 type commonDeployment struct {
-	signer Signer
-
 	deployDir        string
 	deployPathPrefix string
 }
 
-func newCommonDeployment(signer Signer, deployDir, deployPrefix string) *commonDeployment {
+func newCommonDeployment(deployDir, deployPrefix string) *commonDeployment {
 	return &commonDeployment{
-		signer:           signer,
 		deployDir:        deployDir,
 		deployPathPrefix: deployPrefix,
 	}
 }
 
-func (c *commonDeployment) Initialize(_ *gnoland.GnoAccount) ([]*std.Tx, error) {
+func (c *commonDeployment) Initialize(_ std.Account, _ crypto.PrivKey, _ string) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
 	return nil, nil
 }
 
 func (c *commonDeployment) ConstructTransactions(
-	accounts []*gnoland.GnoAccount,
+	keys []crypto.PrivKey,
+	accounts []std.Account,
 	transactions uint64,
+	chainID string,
 ) ([]*std.Tx, error) {
 	// Get absolute path to folder
 	deployPathAbs, err := filepath.Abs(c.deployDir)
@@ -43,7 +42,8 @@ func (c *commonDeployment) ConstructTransactions(
 
 	var (
 		timestamp = time.Now().Unix()
-		getMsgFn  = func(creator *gnoland.GnoAccount, index int) std.Msg {
+
+		getMsgFn = func(creator std.Account, index int) std.Msg {
 			memPkg := gnolang.ReadMemPackage(
 				deployPathAbs,
 				fmt.Sprintf("%s/stress_%d_%d", c.deployPathPrefix, timestamp, index),
@@ -57,9 +57,10 @@ func (c *commonDeployment) ConstructTransactions(
 	)
 
 	return constructTransactions(
-		c.signer,
+		keys,
 		accounts,
 		transactions,
+		chainID,
 		getMsgFn,
 	)
 }

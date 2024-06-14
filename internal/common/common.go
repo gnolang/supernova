@@ -2,11 +2,7 @@ package common
 
 import "github.com/gnolang/gno/tm2/pkg/std"
 
-const (
-	Denomination    = "ugnot"
-	EncryptPassword = "encrypt"
-	KeybasePrefix   = "stress-account-"
-)
+const Denomination = "ugnot"
 
 // TODO support estimating gas params
 // These are constants for now,

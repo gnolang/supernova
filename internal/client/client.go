@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
@@ -12,47 +11,43 @@ import (
 	"github.com/gnolang/supernova/internal/common"
 )
 
-type Batch struct {
-	batch *client.RPCBatch
-}
-
-func (b *Batch) AddTxBroadcast(tx []byte) error {
-	if err := b.batch.BroadcastTxSync(tx); err != nil {
-		return fmt.Errorf("unable to prepare transaction, %w", err)
-	}
-
-	return nil
-}
-
-func (b *Batch) Execute() ([]interface{}, error) {
-	return b.batch.Send(context.Background())
-}
-
-type HTTPClient struct {
+type Client struct {
 	conn *client.RPCClient
 }
 
+// NewWSClient creates a new instance of the WS client
+func NewWSClient(url string) (*Client, error) {
+	cli, err := client.NewWSClient(url)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create ws client, %w", err)
+	}
+
+	return &Client{
+		conn: cli,
+	}, nil
+}
+
 // NewHTTPClient creates a new instance of the HTTP client
-func NewHTTPClient(url string) (*HTTPClient, error) {
+func NewHTTPClient(url string) (*Client, error) {
 	cli, err := client.NewHTTPClient(url)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create http client, %w", err)
 	}
 
-	return &HTTPClient{
+	return &Client{
 		conn: cli,
 	}, nil
 }
 
-func (h *HTTPClient) CreateBatch() common.Batch {
+func (h *Client) CreateBatch() common.Batch {
 	return &Batch{batch: h.conn.NewBatch()}
 }
 
-func (h *HTTPClient) ExecuteABCIQuery(path string, data []byte) (*core_types.ResultABCIQuery, error) {
+func (h *Client) ExecuteABCIQuery(path string, data []byte) (*core_types.ResultABCIQuery, error) {
 	return h.conn.ABCIQuery(path, data)
 }
 
-func (h *HTTPClient) GetLatestBlockHeight() (int64, error) {
+func (h *Client) GetLatestBlockHeight() (int64, error) {
 	status, err := h.conn.Status()
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch status, %w", err)
@@ -61,19 +56,19 @@ func (h *HTTPClient) GetLatestBlockHeight() (int64, error) {
 	return status.SyncInfo.LatestBlockHeight, nil
 }
 
-func (h *HTTPClient) GetBlock(height *int64) (*core_types.ResultBlock, error) {
+func (h *Client) GetBlock(height *int64) (*core_types.ResultBlock, error) {
 	return h.conn.Block(height)
 }
 
-func (h *HTTPClient) GetBlockResults(height *int64) (*core_types.ResultBlockResults, error) {
+func (h *Client) GetBlockResults(height *int64) (*core_types.ResultBlockResults, error) {
 	return h.conn.BlockResults(height)
 }
 
-func (h *HTTPClient) GetConsensusParams(height *int64) (*core_types.ResultConsensusParams, error) {
+func (h *Client) GetConsensusParams(height *int64) (*core_types.ResultConsensusParams, error) {
 	return h.conn.ConsensusParams(height)
 }
 
-func (h *HTTPClient) BroadcastTransaction(tx *std.Tx) error {
+func (h *Client) BroadcastTransaction(tx *std.Tx) error {
 	marshalledTx, err := amino.Marshal(tx)
 	if err != nil {
 		return fmt.Errorf("unable to marshal transaction, %w", err)
@@ -95,7 +90,7 @@ func (h *HTTPClient) BroadcastTransaction(tx *std.Tx) error {
 	return nil
 }
 
-func (h *HTTPClient) GetAccount(address string) (*gnoland.GnoAccount, error) {
+func (h *Client) GetAccount(address string) (*gnoland.GnoAccount, error) {
 	queryResult, err := h.conn.ABCIQuery(
 		fmt.Sprintf("auth/accounts/%s", address),
 		[]byte{},
@@ -117,7 +112,7 @@ func (h *HTTPClient) GetAccount(address string) (*gnoland.GnoAccount, error) {
 	return &acc, nil
 }
 
-func (h *HTTPClient) GetBlockGasUsed(height int64) (int64, error) {
+func (h *Client) GetBlockGasUsed(height int64) (int64, error) {
 	blockRes, err := h.conn.BlockResults(&height)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch block results, %w", err)
@@ -131,7 +126,7 @@ func (h *HTTPClient) GetBlockGasUsed(height int64) (int64, error) {
 	return gasUsed, nil
 }
 
-func (h *HTTPClient) GetBlockGasLimit(height int64) (int64, error) {
+func (h *Client) GetBlockGasLimit(height int64) (int64, error) {
 	consensusParams, err := h.conn.ConsensusParams(&height)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch block info, %w", err)

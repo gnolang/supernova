@@ -3,7 +3,6 @@ package collector
 import (
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/gnolang/gno/tm2/pkg/bft/types"
@@ -118,7 +117,6 @@ func (c *Collector) GetRunResult(
 	return &RunResult{
 		AverageTPS: calculateTPS(
 			startTime,
-			blockResults[len(blockResults)-1].Time,
 			len(txHashes),
 		),
 		Blocks: blockResults,
@@ -160,9 +158,8 @@ func (t *txLookup) anyBelong(txs types.Txs) int {
 }
 
 // calculateTPS calculates the TPS for the sequence
-func calculateTPS(startBlock, endBlock time.Time, totalTx int) int {
-	diff := endBlock.Sub(startBlock).Seconds()
+func calculateTPS(startTime time.Time, totalTx int) float64 {
+	diff := time.Now().Sub(startTime).Seconds()
 
-	// ceil(numTxs / commit time)
-	return int(math.Ceil(float64(totalTx) / diff))
+	return float64(totalTx) / diff
 }

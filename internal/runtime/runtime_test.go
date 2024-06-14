@@ -8,6 +8,7 @@ import (
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,19 +87,20 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			var (
 				transactions = uint64(100)
 				accounts     = generateAccounts(10)
+				accountKeys  = testutils.GenerateAccounts(t, 10)
 			)
 
 			// Get the runtime
-			r := GetRuntime(testCase.mode, &mockSigner{})
+			r := GetRuntime(testCase.mode)
 
 			// Make sure there is no initialization logic
-			initialTxs, err := r.Initialize(nil)
+			initialTxs, err := r.Initialize(accounts[0], accountKeys[0], "dummy")
 
 			assert.Nil(t, initialTxs)
 			assert.Nil(t, err)
 
 			// Construct the transactions
-			txs, err := r.ConstructTransactions(accounts, transactions)
+			txs, err := r.ConstructTransactions(accountKeys, accounts, transactions, "dummy")
 			if err != nil {
 				t.Fatalf("unable to construct transactions, %v", err)
 			}
@@ -124,13 +126,14 @@ func TestRuntime_RealmCall(t *testing.T) {
 	var (
 		transactions = uint64(100)
 		accounts     = generateAccounts(11)
+		accountKeys  = testutils.GenerateAccounts(t, 11)
 	)
 
 	// Get the runtime
-	r := GetRuntime(RealmCall, &mockSigner{})
+	r := GetRuntime(RealmCall)
 
 	// Make sure the initialization logic is present
-	initialTxs, err := r.Initialize(accounts[0])
+	initialTxs, err := r.Initialize(accounts[0], accountKeys[0], "dummy")
 	if err != nil {
 		t.Fatalf("unable to generate init transactions, %v", err)
 	}
@@ -144,7 +147,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 	}
 
 	// Construct the transactions
-	txs, err := r.ConstructTransactions(accounts, transactions)
+	txs, err := r.ConstructTransactions(accountKeys[1:], accounts[1:], transactions, "dummy")
 	if err != nil {
 		t.Fatalf("unable to construct transactions, %v", err)
 	}

@@ -7,10 +7,10 @@ import (
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
-	"github.com/gnolang/gno/tm2/pkg/crypto/keys"
 	"github.com/gnolang/gno/tm2/pkg/sdk/bank"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
+	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -23,34 +23,29 @@ type Client interface {
 	BroadcastTransaction(tx *std.Tx) error
 }
 
-type Signer interface {
-	SignTx(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, passphrase string) error
-}
-
 // Distributor is the process
 // that manages sub-account distributions
 type Distributor struct {
-	cli    Client
-	signer Signer
+	cli Client
 }
 
 // NewDistributor creates a new instance of the distributor
 func NewDistributor(
 	cli Client,
-	signer Signer,
 ) *Distributor {
 	return &Distributor{
-		cli:    cli,
-		signer: signer,
+		cli: cli,
 	}
 }
 
 // Distribute distributes the funds from the base account
 // (account 0 in the mnemonic) to other subaccounts
 func (d *Distributor) Distribute(
-	accounts []keys.Info,
+	distributor crypto.PrivKey,
+	accounts []crypto.Address,
 	transactions uint64,
-) ([]*gnoland.GnoAccount, error) {
+	chainID string,
+) ([]std.Account, error) {
 	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
 
 	// Calculate the base fees
@@ -62,7 +57,7 @@ func (d *Distributor) Distribute(
 	)
 
 	// Fund the accounts
-	return d.fundAccounts(accounts, subAccountCost)
+	return d.fundAccounts(distributor, accounts, subAccountCost, chainID)
 }
 
 // calculateRuntimeCosts calculates the amount of funds
@@ -87,7 +82,12 @@ func calculateRuntimeCosts(totalTx int64) std.Coin {
 
 // fundAccounts attempts to fund accounts that have missing funds,
 // and returns the accounts that can participate in the stress test
-func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin) ([]*gnoland.GnoAccount, error) {
+func (d *Distributor) fundAccounts(
+	distributorKey crypto.PrivKey,
+	accounts []crypto.Address,
+	singleRunCost std.Coin,
+	chainID string,
+) ([]std.Account, error) {
 	type shortAccount struct {
 		address      crypto.Address
 		missingFunds std.Coin
@@ -95,7 +95,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 
 	var (
 		// Accounts that are ready (funded) for the run
-		readyAccounts = make([]*gnoland.GnoAccount, 0, len(accounts))
+		readyAccounts = make([]std.Account, 0, len(accounts))
 
 		// Accounts that need funding
 		shortAccounts = make([]shortAccount, 0, len(accounts))
@@ -103,9 +103,9 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 
 	// Check if there are any accounts that need to be funded
 	// before the stress test starts
-	for _, account := range accounts[1:] {
+	for _, account := range accounts {
 		// Fetch the account balance
-		subAccount, err := d.cli.GetAccount(account.GetAddress().String())
+		subAccount, err := d.cli.GetAccount(account.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch sub-account, %w", err)
 		}
@@ -114,7 +114,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		if subAccount.Coins.AmountOf(common.Denomination) < singleRunCost.Amount {
 			// Mark the account as needing a top-up
 			shortAccounts = append(shortAccounts, shortAccount{
-				address: account.GetAddress(),
+				address: account,
 				missingFunds: std.Coin{
 					Denom:  common.Denomination,
 					Amount: singleRunCost.Amount - subAccount.Coins.AmountOf(common.Denomination),
@@ -143,7 +143,7 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 	})
 
 	// Figure out how many accounts can actually be funded
-	distributor, err := d.cli.GetAccount(accounts[0].GetAddress().String())
+	distributor, err := d.cli.GetAccount(distributorKey.PubKey().Address().String())
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch distributor account, %w", err)
 	}
@@ -178,10 +178,13 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 		return nil, errInsufficientFunds
 	}
 
-	// Locally keep track of the nonce, so
-	// there is no need to re-fetch the account again
-	// before signing a future tx
-	nonce := distributor.Sequence
+	var (
+		// Locally keep track of the nonce, so
+		// there is no need to re-fetch the account again
+		// before signing a future tx
+		nonce      = distributor.Sequence
+		defaultFee = std.NewFee(100000, common.DefaultGasFee)
+	)
 
 	fmt.Printf("Funding %d accounts...\n", len(shortAccounts))
 	bar := progressbar.Default(int64(len(shortAccounts)), "funding short accounts")
@@ -196,11 +199,17 @@ func (d *Distributor) fundAccounts(accounts []keys.Info, singleRunCost std.Coin)
 					Amount:      std.NewCoins(account.missingFunds),
 				},
 			},
-			Fee: std.NewFee(100000, common.DefaultGasFee),
+			Fee: defaultFee,
+		}
+
+		cfg := signer.SignCfg{
+			ChainID:       chainID,
+			AccountNumber: distributor.AccountNumber,
+			Sequence:      nonce,
 		}
 
 		// Sign the transaction
-		if err := d.signer.SignTx(tx, distributor, nonce, common.EncryptPassword); err != nil {
+		if err := signer.SignTx(tx, distributorKey, cfg); err != nil {
 			return nil, fmt.Errorf("unable to sign transaction, %w", err)
 		}
 

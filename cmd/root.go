@@ -93,7 +93,7 @@ func registerFlags(fs *flag.FlagSet, c *internal.Config) {
 	fs.Uint64Var(
 		&c.BatchSize,
 		"batch",
-		20,
+		100,
 		"the batch size of JSON-RPC transactions",
 	)
 }

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gnolang/gno/tm2/pkg/crypto/keys"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
+	"github.com/gnolang/gno/tm2/pkg/crypto/bip39"
 	"github.com/gnolang/supernova/internal/batcher"
 	"github.com/gnolang/supernova/internal/client"
 	"github.com/gnolang/supernova/internal/collector"
-	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/distributor"
 	"github.com/gnolang/supernova/internal/runtime"
 	"github.com/gnolang/supernova/internal/signer"
@@ -21,34 +21,34 @@ type pipelineClient interface {
 	collector.Client
 }
 
-type pipelineSigner interface {
-	distributor.Signer
-}
-
 // Pipeline is the central run point
 // for the stress test
 type Pipeline struct {
-	cfg *Config // the run configuration
-
-	keybase keys.Keybase   // relevant keybase
-	cli     pipelineClient // HTTP client connection
-	signer  pipelineSigner // the transaction signer
+	cfg *Config        // the run configuration
+	cli pipelineClient // HTTP client connection
 }
 
 // NewPipeline creates a new pipeline instance
 func NewPipeline(cfg *Config) (*Pipeline, error) {
-	kb := keys.NewInMemory()
+	var (
+		cli *client.Client
+		err error
+	)
 
-	cli, err := client.NewHTTPClient(cfg.URL)
+	// Check which kind of client to create
+	if httpRegex.MatchString(cfg.URL) {
+		cli, err = client.NewHTTPClient(cfg.URL)
+	} else {
+		cli, err = client.NewWSClient(cfg.URL)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("unable to create HTTP client, %w", err)
+		return nil, fmt.Errorf("unable to create RPC client, %w", err)
 	}
 
 	return &Pipeline{
-		cfg:     cfg,
-		keybase: kb,
-		cli:     cli,
-		signer:  signer.NewKeybaseSigner(kb, cfg.ChainID),
+		cfg: cfg,
+		cli: cli,
 	}, nil
 }
 
@@ -59,31 +59,58 @@ func (p *Pipeline) Execute() error {
 
 		txBatcher   = batcher.NewBatcher(p.cli)
 		txCollector = collector.NewCollector(p.cli)
-		txRuntime   = runtime.GetRuntime(mode, p.signer)
+		txRuntime   = runtime.GetRuntime(mode)
 	)
 
 	// Initialize the accounts for the runtime
-	accounts, err := p.initializeAccounts()
-	if err != nil {
+	accounts := p.initializeAccounts()
+
+	// Predeploy any pending transactions
+	if err := prepareRuntime(
+		mode,
+		accounts[0],
+		p.cfg.ChainID,
+		p.cli,
+		txRuntime,
+	); err != nil {
 		return err
 	}
 
-	// Predeploy any pending transactions
-	if err := prepareRuntime(mode, accounts, p.cli, txRuntime); err != nil {
-		return err
+	// Extract the addresses
+	addresses := make([]crypto.Address, 0, len(accounts[1:]))
+	for _, account := range accounts[1:] {
+		addresses = append(addresses, account.PubKey().Address())
 	}
 
 	// Distribute the funds to sub-accounts
-	runAccounts, err := distributor.NewDistributor(p.cli, p.signer).Distribute(
-		accounts,
+	runAccounts, err := distributor.NewDistributor(p.cli).Distribute(
+		accounts[0],
+		addresses,
 		p.cfg.Transactions,
+		p.cfg.ChainID,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to distribute funds, %w", err)
 	}
 
+	// Find which keys belong to the run accounts (not all initial accounts are run accounts)
+	runKeys := make([]crypto.PrivKey, 0, len(runAccounts))
+
+	for _, runAccount := range runAccounts {
+		for _, account := range accounts[1:] {
+			if account.PubKey().Address() == runAccount.GetAddress() {
+				runKeys = append(runKeys, account)
+			}
+		}
+	}
+
 	// Construct the transactions using the runtime
-	txs, err := txRuntime.ConstructTransactions(runAccounts, p.cfg.Transactions)
+	txs, err := txRuntime.ConstructTransactions(
+		runKeys,
+		runAccounts,
+		p.cfg.Transactions,
+		p.cfg.ChainID,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to construct transactions, %w", err)
 	}
@@ -111,37 +138,26 @@ func (p *Pipeline) Execute() error {
 }
 
 // initializeAccounts initializes the accounts needed for the stress test run
-func (p *Pipeline) initializeAccounts() ([]keys.Info, error) {
+func (p *Pipeline) initializeAccounts() []crypto.PrivKey {
 	fmt.Printf("\n🧮 Initializing Accounts 🧮\n\n")
-
 	fmt.Printf("Generating sub-accounts...\n")
 
 	var (
-		accounts = make([]keys.Info, p.cfg.SubAccounts+1)
+		accounts = make([]crypto.PrivKey, p.cfg.SubAccounts+1)
 		bar      = progressbar.Default(int64(p.cfg.SubAccounts+1), "accounts initialized")
+
+		seed = bip39.NewSeed(p.cfg.Mnemonic, "")
 	)
 
 	// Register the accounts with the keybase
 	for i := 0; i < int(p.cfg.SubAccounts)+1; i++ {
-		info, err := p.keybase.CreateAccount(
-			fmt.Sprintf("%s%d", common.KeybasePrefix, i),
-			p.cfg.Mnemonic,
-			"",
-			common.EncryptPassword,
-			uint32(0),
-			uint32(i),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create account with keybase, %w", err)
-		}
-
-		accounts[i] = info
+		accounts[i] = signer.GenerateKeyFromSeed(seed, uint32(i))
 		_ = bar.Add(1)
 	}
 
 	fmt.Printf("✅ Successfully generated %d accounts\n", len(accounts))
 
-	return accounts, nil
+	return accounts
 }
 
 // handleResults displays the results in the terminal,
@@ -171,7 +187,8 @@ func (p *Pipeline) handleResults(runResult *collector.RunResult) error {
 // any pending transactions
 func prepareRuntime(
 	mode runtime.Type,
-	accounts []keys.Info,
+	deployerKey crypto.PrivKey,
+	chainID string,
 	cli pipelineClient,
 	txRuntime runtime.Runtime,
 ) error {
@@ -182,13 +199,13 @@ func prepareRuntime(
 	fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
 
 	// Get the deployer account
-	deployer, err := cli.GetAccount(accounts[0].GetAddress().String())
+	deployer, err := cli.GetAccount(deployerKey.PubKey().Address().String())
 	if err != nil {
 		return fmt.Errorf("unable to fetch deployer account, %w", err)
 	}
 
 	// Get the predeploy transactions
-	predeployTxs, err := txRuntime.Initialize(deployer)
+	predeployTxs, err := txRuntime.Initialize(deployer, deployerKey, chainID)
 	if err != nil {
 		return fmt.Errorf("unable to initialize runtime, %w", err)
 	}

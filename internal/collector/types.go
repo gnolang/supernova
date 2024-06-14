@@ -15,7 +15,7 @@ type Client interface {
 
 // RunResult is the complete test-run result
 type RunResult struct {
-	AverageTPS int            `json:"averageTPS"`
+	AverageTPS float64        `json:"averageTPS"`
 	Blocks     []*BlockResult `json:"blocks"`
 }
 

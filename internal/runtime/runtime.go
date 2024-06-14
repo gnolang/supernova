@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"github.com/gnolang/gno/gno.land/pkg/gnoland"
+	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 )
@@ -25,27 +25,32 @@ var (
 // and to predeploy (initialize) any infrastructure (package)
 type Runtime interface {
 	// Initialize prepares any infrastructure transactions that are required
-	// to be executed before the stress test runs, if any
-	Initialize(*gnoland.GnoAccount) ([]*std.Tx, error)
+	// to be executed before the stress test runs, if any.
+	Initialize(
+		account std.Account,
+		key crypto.PrivKey,
+		chainID string,
+	) ([]*std.Tx, error)
 
 	// ConstructTransactions generates and signs the required transactions
 	// that will be used in the stress test
-	ConstructTransactions(accounts []*gnoland.GnoAccount, transactions uint64) ([]*std.Tx, error)
-}
-
-type Signer interface {
-	SignTx(tx *std.Tx, account *gnoland.GnoAccount, nonce uint64, passphrase string) error
+	ConstructTransactions(
+		keys []crypto.PrivKey,
+		accounts []std.Account,
+		transactions uint64,
+		chainID string,
+	) ([]*std.Tx, error)
 }
 
 // GetRuntime fetches the specified runtime, if any
-func GetRuntime(runtimeType Type, signer Signer) Runtime {
+func GetRuntime(runtimeType Type) Runtime {
 	switch runtimeType {
 	case RealmCall:
-		return newRealmCall(signer)
+		return newRealmCall()
 	case RealmDeployment:
-		return newCommonDeployment(signer, realmLocation, realmPathPrefix)
+		return newCommonDeployment(realmLocation, realmPathPrefix)
 	case PackageDeployment:
-		return newCommonDeployment(signer, packageLocation, packagePathPrefix)
+		return newCommonDeployment(packageLocation, packagePathPrefix)
 	default:
 		return nil
 	}
