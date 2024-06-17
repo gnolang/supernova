@@ -59,6 +59,8 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+      - scripts
   - use: buildx
     dockerfile: Dockerfile.release
     goos: linux
@@ -72,6 +74,8 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+      - scripts
   - use: buildx
     dockerfile: Dockerfile.release
     goos: linux
@@ -86,6 +90,8 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+      - scripts
   - use: buildx
     dockerfile: Dockerfile.release
     goos: linux
@@ -100,6 +106,9 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+      - scripts
+
 docker_manifests:
   # https://goreleaser.com/customization/docker_manifest/
   - name_template: ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}
