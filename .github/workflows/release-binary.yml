@@ -17,7 +17,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21
+          go-version: "1.22.x"
+          cache: true
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
       
       - uses: sigstore/cosign-installer@v3.5.0
       - uses: anchore/sbom-action/download-syft@v0.16.0
@@ -41,6 +45,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: release --version
+          args: release --draft --skip validate --skip publish --clean --config .github/goreleaser.yaml --verbose
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
