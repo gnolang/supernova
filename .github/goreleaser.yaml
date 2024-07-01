@@ -31,20 +31,6 @@ archives:
       - LICENSE
       - README.md
 
-# signs:
-#   - cmd: cosign
-#     env:
-#       - COSIGN_EXPERIMENTAL=1
-#     certificate: '${artifact}.pem'
-#     args:
-#       - sign-blob
-#       - '--output-certificate=${certificate}'
-#       - '--output-signature=${signature}'
-#       - '${artifact}'
-#       - "--yes" # needed on cosign 2.0.0+
-#     artifacts: checksum
-#     output: true
-
 # dockers:
 #   # https://goreleaser.com/customization/docker/
 #   - use: buildx
@@ -109,6 +95,20 @@ archives:
 #       - "--label=org.opencontainers.image.version={{.Version}}"
 #     extra_files:
 #       - scripts
+
+# signs:
+#   - cmd: cosign
+#     env:
+#       - COSIGN_EXPERIMENTAL=1
+#     certificate: '${artifact}.pem'
+#     args:
+#       - sign-blob
+#       - '--output-certificate=${certificate}'
+#       - '--output-signature=${signature}'
+#       - '${artifact}'
+#       - "--yes" # needed on cosign 2.0.0+
+#     artifacts: checksum
+#     output: true
 
 # docker_manifests:
 #   # https://goreleaser.com/customization/docker_manifest/
