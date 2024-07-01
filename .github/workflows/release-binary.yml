@@ -11,7 +11,7 @@ on:
     #   - "v*"
 
 jobs:
-  binary:
+  binary-release:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
@@ -41,6 +41,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-          args: build --clean --config ./.github/goreleaser.yaml
+          args: build --skip validate --clean --config ./.github/goreleaser.yaml
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
