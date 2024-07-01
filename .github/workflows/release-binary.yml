@@ -40,7 +40,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
-          args: release --draft --skip validate --skip publish --clean --config .github/goreleaser.yaml --verbose
+          version: '~> v2'
+          args: release --version
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

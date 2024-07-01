@@ -4,6 +4,7 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    - go generate ./...
 
 builds:
   - main: ./cmd
@@ -12,14 +13,14 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
+      # - darwin
     goarch:
       - amd64
-      - arm64
-      - arm
-    goarm:
-      - 6
-      - 7
+    #   - arm64
+    #   - arm
+    # goarm:
+    #   - 6
+    #   - 7
 
 gomod:
   proxy: true
