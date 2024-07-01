@@ -46,6 +46,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: release --draft --skip validate --skip publish --clean --config .github/goreleaser.yaml --verbose
+          args: release --draft --clean --config .github/goreleaser.yaml --verbose
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
