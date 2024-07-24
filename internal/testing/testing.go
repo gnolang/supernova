@@ -19,7 +19,7 @@ func GenerateMnemonic(t *testing.T) string {
 	}
 
 	// Generate the actual mnemonic
-	mnemonic, err := bip39.NewMnemonic(entropySeed[:])
+	mnemonic, err := bip39.NewMnemonic(entropySeed)
 	if err != nil {
 		t.Fatalf("unable to generate mnemonic, %v", err)
 	}

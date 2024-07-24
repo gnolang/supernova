@@ -14,21 +14,19 @@ func displayResults(result *collector.RunResult) {
 	w := tabwriter.NewWriter(os.Stdout, 10, 20, 2, ' ', 0)
 
 	// TPS //
-	_, _ = fmt.Fprintln(w, fmt.Sprintf("\nTPS: %.2f", result.AverageTPS))
+	_, _ = fmt.Fprintf(w, "\nTPS: %.2f\n", result.AverageTPS)
 
 	// Block info //
 	_, _ = fmt.Fprintln(w, "\nBlock #\tGas Used\tGas Limit\tTransactions\tUtilization")
 	for _, block := range result.Blocks {
-		_, _ = fmt.Fprintln(
+		_, _ = fmt.Fprintf(
 			w,
-			fmt.Sprintf(
-				"Block #%d\t%d\t%d\t%d\t%.2f%%",
-				block.Number,
-				block.GasUsed,
-				block.GasLimit,
-				block.Transactions,
-				(float64(block.GasUsed)/float64(block.GasLimit))*100,
-			),
+			"Block #%d\t%d\t%d\t%d\t%.2f%%\n",
+			block.Number,
+			block.GasUsed,
+			block.GasLimit,
+			block.Transactions,
+			(float64(block.GasUsed)/float64(block.GasLimit))*100,
 		)
 	}
 

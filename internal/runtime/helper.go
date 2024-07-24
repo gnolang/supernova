@@ -70,7 +70,7 @@ func constructTransactions(
 
 		// Mark the transaction as ready
 		txs[i] = tx
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully constructed %d transactions\n", transactions)

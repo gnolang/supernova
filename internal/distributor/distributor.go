@@ -14,9 +14,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var (
-	errInsufficientFunds = errors.New("insufficient distributor funds")
-)
+var errInsufficientFunds = errors.New("insufficient distributor funds")
 
 type Client interface {
 	GetAccount(address string) (*gnoland.GnoAccount, error)
@@ -89,8 +87,8 @@ func (d *Distributor) fundAccounts(
 	chainID string,
 ) ([]std.Account, error) {
 	type shortAccount struct {
-		address      crypto.Address
 		missingFunds std.Coin
+		address      crypto.Address
 	}
 
 	var (
@@ -232,7 +230,7 @@ func (d *Distributor) fundAccounts(
 		// Mark the account as funded
 		readyAccounts = append(readyAccounts, nodeAccount)
 
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully funded %d accounts\n", len(shortAccounts))

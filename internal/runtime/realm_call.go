@@ -2,19 +2,15 @@ package runtime
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
-	"github.com/gnolang/gno/gnovm/pkg/gnolang"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/signer"
 )
 
-const (
-	methodName = "SayHello"
-)
+const methodName = "SayHello"
 
 type realmCall struct {
 	realmPath string
@@ -25,23 +21,28 @@ func newRealmCall() *realmCall {
 }
 
 func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID string) ([]*std.Tx, error) {
-	// Get absolute path to folder
-	deployPathAbs, err := filepath.Abs(realmLocation)
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve absolute path, %w", err)
-	}
-
 	// The Realm needs to be deployed before
 	// it can be interacted with
-	r.realmPath = fmt.Sprintf("%s/stress_%d", realmPathPrefix, time.Now().Unix())
+	r.realmPath = fmt.Sprintf(
+		"%s/%s/stress_%d",
+		realmPathPrefix,
+		account.GetAddress().String(),
+		time.Now().Unix(),
+	)
 
 	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
-		Package: gnolang.ReadMemPackage(
-			deployPathAbs,
-			r.realmPath,
-		),
+		Package: &std.MemPackage{
+			Name: packageName,
+			Path: r.realmPath,
+			Files: []*std.MemFile{
+				{
+					Name: realmFileName,
+					Body: realmBody,
+				},
+			},
+		},
 	}
 
 	tx := &std.Tx{

@@ -95,7 +95,6 @@ func (h *Client) GetAccount(address string) (*gnoland.GnoAccount, error) {
 		fmt.Sprintf("auth/accounts/%s", address),
 		[]byte{},
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch account %s, %w", address, err)
 	}

@@ -1,5 +1,22 @@
 package runtime
 
+const (
+	realmBody = `package runtime
+
+var greeting string
+
+func init() {
+	greeting = "Hello"
+}
+
+// SayHello says hello to the specified name, using
+// the saved greeting
+func SayHello(name string) string {
+	return greeting + " " + name + "!"
+}
+`
+	packageBody = `package runtime
+
 type Language string
 
 const (
@@ -31,3 +48,11 @@ func GetGreeting(language Language) string {
 		return "Hello"
 	}
 }
+`
+)
+
+const (
+	packageName     = "runtime"
+	realmFileName   = "realm.gno"
+	packageFileName = "package.gno"
+)

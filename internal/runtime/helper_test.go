@@ -44,7 +44,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		transactions = uint64(100)
 		msg          = vm.MsgAddPackage{}
 
-		getMsgFn = func(creator std.Account, index int) std.Msg {
+		getMsgFn = func(_ std.Account, _ int) std.Msg {
 			return msg
 		}
 	)

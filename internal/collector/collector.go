@@ -9,9 +9,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var (
-	errTimeout = errors.New("collector timed out")
-)
+var errTimeout = errors.New("collector timed out")
 
 // Collector is the transaction / block stat
 // collector.
@@ -86,7 +84,7 @@ func (c *Collector) GetRunResult(
 				}
 
 				processed += belong
-				_ = bar.Add(belong)
+				_ = bar.Add(belong) //nolint:errcheck // No need to check
 
 				// Fetch the total gas used by transactions
 				blockGasUsed, err := c.cli.GetBlockGasUsed(blockNum)
@@ -159,7 +157,7 @@ func (t *txLookup) anyBelong(txs types.Txs) int {
 
 // calculateTPS calculates the TPS for the sequence
 func calculateTPS(startTime time.Time, totalTx int) float64 {
-	diff := time.Now().Sub(startTime).Seconds()
+	diff := time.Since(startTime).Seconds()
 
 	return float64(totalTx) / diff
 }

@@ -87,7 +87,7 @@ func prepareTransactions(txs []*std.Tx) ([][]byte, error) {
 
 		marshalledTxs[index] = txBin
 
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	return marshalledTxs, nil
@@ -117,7 +117,7 @@ func (b *Batcher) generateBatches(txs [][]byte, batchSize int) ([]common.Batch, 
 
 		readyBatches[index] = cliBatch
 
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	return readyBatches, nil
@@ -142,7 +142,7 @@ func sendBatches(readyBatches []common.Batch) ([][]any, error) {
 
 		batchResults[index] = batchResult
 
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully sent %d batches\n", numBatches)
@@ -184,7 +184,7 @@ func parseBatchResults(batchResults [][]any, numTx int) ([][]byte, error) {
 			txHashes[index] = txResult.Hash
 			index++
 
-			_ = bar.Add(1)
+			_ = bar.Add(1) //nolint:errcheck // No need to check
 		}
 	}
 

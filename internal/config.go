@@ -19,10 +19,10 @@ var (
 
 var (
 	// httpRegex is used for verifying the cluster's JSON-RPC HTTP endpoint
-	httpRegex = regexp.MustCompile(`(https?://.*)(:(\d*)\/?(.*))?`)
+	httpRegex = regexp.MustCompile(`(https?://.*)(:(\d*)/?(.*))?`)
 
 	// wsRegex is used for verifying the cluster's JSON-RPC WS endpoint
-	wsRegex = regexp.MustCompile(`(wss?://.*)(:(\d*)\/?(.*))?`)
+	wsRegex = regexp.MustCompile(`(wss?://.*)(:(\d*)/?(.*))?`)
 )
 
 // Config is the central pipeline configuration

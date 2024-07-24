@@ -7,16 +7,11 @@ import (
 )
 
 const (
-	realmLocation   = "./scripts/r"
-	packageLocation = "./scripts/p"
-
-	realmPathPrefix   = "gno.land/r/demo"
-	packagePathPrefix = "gno.land/p/demo"
+	realmPathPrefix   = "gno.land/r"
+	packagePathPrefix = "gno.land/p"
 )
 
-var (
-	defaultDeployTxFee = std.NewFee(165000, common.DefaultGasFee)
-)
+var defaultDeployTxFee = std.NewFee(500000, common.DefaultGasFee)
 
 // Runtime is the base interface for all runtime
 // implementations.
@@ -25,7 +20,7 @@ var (
 // and to predeploy (initialize) any infrastructure (package)
 type Runtime interface {
 	// Initialize prepares any infrastructure transactions that are required
-	// to be executed before the stress test runs, if any.
+	// to be executed before the stress test runs, if any
 	Initialize(
 		account std.Account,
 		key crypto.PrivKey,
@@ -48,9 +43,9 @@ func GetRuntime(runtimeType Type) Runtime {
 	case RealmCall:
 		return newRealmCall()
 	case RealmDeployment:
-		return newCommonDeployment(realmLocation, realmPathPrefix)
+		return newRealmDeployment()
 	case PackageDeployment:
-		return newCommonDeployment(packageLocation, packagePathPrefix)
+		return newPackageDeployment()
 	default:
 		return nil
 	}

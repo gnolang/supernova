@@ -152,7 +152,7 @@ func (p *Pipeline) initializeAccounts() []crypto.PrivKey {
 	// Register the accounts with the keybase
 	for i := 0; i < int(p.cfg.SubAccounts)+1; i++ {
 		accounts[i] = signer.GenerateKeyFromSeed(seed, uint32(i))
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully generated %d accounts\n", len(accounts))
@@ -218,7 +218,7 @@ func prepareRuntime(
 			return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
 		}
 
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
