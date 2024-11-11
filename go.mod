@@ -7,7 +7,7 @@ toolchain go1.22.5
 require (
 	github.com/gnolang/gno v0.2.0
 	github.com/peterbourgon/ff/v3 v3.4.0
-	github.com/schollz/progressbar/v3 v3.16.0
+	github.com/schollz/progressbar/v3 v3.17.1
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -51,8 +51,8 @@ require (
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/term v0.26.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
