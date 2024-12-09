@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
+	"github.com/gnolang/gno/gnovm"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
@@ -34,7 +35,7 @@ func (c *realmDeployment) ConstructTransactions(
 		timestamp = time.Now().Unix()
 
 		getMsgFn = func(creator std.Account, index int) std.Msg {
-			memPkg := &std.MemPackage{
+			memPkg := &gnovm.MemPackage{
 				Name: packageName,
 				Path: fmt.Sprintf(
 					"%s/%s/stress_%d_%d",
@@ -43,7 +44,7 @@ func (c *realmDeployment) ConstructTransactions(
 					timestamp,
 					index,
 				),
-				Files: []*std.MemFile{
+				Files: []*gnovm.MemFile{
 					{
 						Name: realmFileName,
 						Body: realmBody,

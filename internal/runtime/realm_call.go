@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
+	"github.com/gnolang/gno/gnovm"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/signer"
@@ -33,10 +34,10 @@ func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID 
 	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
-		Package: &std.MemPackage{
+		Package: &gnovm.MemPackage{
 			Name: packageName,
 			Path: r.realmPath,
-			Files: []*std.MemFile{
+			Files: []*gnovm.MemFile{
 				{
 					Name: realmFileName,
 					Body: realmBody,
