@@ -12,7 +12,7 @@ test:
 
 .PHONY: lint
 lint:
-	$(golangci_lint) run --config .golangci.yaml
+	$(golangci_lint) run --config .github/golangci.yaml
 
 .PHONY: gofumpt
 gofumpt:

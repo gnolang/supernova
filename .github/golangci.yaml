@@ -114,3 +114,6 @@ linters-settings:
   godot:
     scope: all
     period: false
+  gosec:
+    excludes:
+      - G115 # We tolerate casting shenanigans
