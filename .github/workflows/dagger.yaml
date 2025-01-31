@@ -1,4 +1,4 @@
-name: dagger
+name: dagger-supernova
 
 on:
   workflow_dispatch:
