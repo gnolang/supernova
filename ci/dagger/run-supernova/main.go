@@ -34,7 +34,7 @@ type Supernova struct{}
 // Builds Supernova image from code passed into a *dagger.Directory item
 func (s *Supernova) BuildImage(directory *dagger.Directory) *dagger.Container {
 	baseBuilder := dag.Container().
-		From("golang:1.22-alpine").
+		From("golang:1.23-alpine").
 		WithDirectory("/src", directory).
 		WithWorkdir("/src").
 		WithEnvVariable("CGO_ENABLED", "0").
