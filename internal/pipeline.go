@@ -110,6 +110,7 @@ func (p *Pipeline) Execute() error {
 		runAccounts,
 		p.cfg.Transactions,
 		p.cfg.ChainID,
+		p.cli.EstimateGas,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to construct transactions, %w", err)
@@ -205,7 +206,12 @@ func prepareRuntime(
 	}
 
 	// Get the predeploy transactions
-	predeployTxs, err := txRuntime.Initialize(deployer, deployerKey, chainID)
+	predeployTxs, err := txRuntime.Initialize(
+		deployer,
+		deployerKey,
+		chainID,
+		cli.EstimateGas,
+	)
 	if err != nil {
 		return fmt.Errorf("unable to initialize runtime, %w", err)
 	}

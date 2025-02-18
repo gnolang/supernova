@@ -4,21 +4,13 @@ import "github.com/gnolang/gno/tm2/pkg/std"
 
 const Denomination = "ugnot"
 
-// TODO support estimating gas params
-// These are constants for now,
-// but should be fetched as estimations
-// from the Tendermint node once this functionality
-// is available.
-//
-// Each package call / deployment
-// costs a fixed 1 GNOT
-// https://github.com/gnolang/gno/issues/649
 var (
 	DefaultGasFee = std.Coin{
 		Denom:  Denomination,
-		Amount: 1,
+		Amount: 5,
 	}
 
+	// TODO remove
 	InitialTxCost = std.Coin{
 		Denom:  Denomination,
 		Amount: 1000000, // 1 GNOT

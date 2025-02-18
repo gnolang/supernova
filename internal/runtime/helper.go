@@ -20,6 +20,7 @@ func constructTransactions(
 	transactions uint64,
 	chainID string,
 	getMsg msgFn,
+	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	var (
 		txs = make([]*std.Tx, transactions)
@@ -29,6 +30,50 @@ func constructTransactions(
 		// an account is used
 		nonceMap = make(map[uint64]uint64) // accountNumber -> nonce
 	)
+
+	fmt.Printf("\n🔨 Estimating Gas 🔨\n\n")
+
+	// Estimate the fee for the transaction batch
+	txFee := defaultDeployTxFee
+
+	// Construct the first tx
+	// Generate the transaction
+	var (
+		creator    = accounts[0]
+		creatorKey = keys[0]
+	)
+
+	tx := &std.Tx{
+		Msgs: []std.Msg{getMsg(creator, 0)},
+		Fee:  txFee,
+	}
+
+	// Sign the transaction
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: creator.GetAccountNumber(),
+		Sequence:      creator.GetSequence(),
+	}
+
+	if err := signer.SignTx(tx, creatorKey, cfg); err != nil {
+		return nil, fmt.Errorf("unable to sign transaction, %w", err)
+	}
+
+	gasWanted, err := estimateFn(tx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to estimate gas, %w", err)
+	}
+
+	// Clear the old signatures, because they need
+	// to be regenerated
+	clear(tx.Signatures)
+
+	// Use the estimated gas limit
+	txFee.GasWanted = gasWanted + 10_000 // 10k gas buffer
+
+	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
+		return nil, fmt.Errorf("unable to sign transaction, %w", err)
+	}
 
 	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
@@ -44,7 +89,7 @@ func constructTransactions(
 
 		tx := &std.Tx{
 			Msgs: []std.Msg{getMsg(creator, i)},
-			Fee:  defaultDeployTxFee,
+			Fee:  txFee,
 		}
 
 		// Fetch the next account nonce

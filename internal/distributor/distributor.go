@@ -19,6 +19,7 @@ var errInsufficientFunds = errors.New("insufficient distributor funds")
 type Client interface {
 	GetAccount(address string) (*gnoland.GnoAccount, error)
 	BroadcastTransaction(tx *std.Tx) error
+	EstimateGas(tx *std.Tx) (int64, error)
 }
 
 // Distributor is the process
@@ -66,7 +67,7 @@ func calculateRuntimeCosts(totalTx int64) std.Coin {
 	// NOTE: Since there is no gas estimation support yet, this value
 	// is fixed, but it will change in the future once pricing estimations
 	// are added
-	baseTxCost := common.DefaultGasFee.Add(common.InitialTxCost)
+	baseTxCost := common.DefaultGasFee
 
 	// Each account should have enough funds
 	// to execute the entire run

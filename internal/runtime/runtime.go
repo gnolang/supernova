@@ -11,7 +11,10 @@ const (
 	packagePathPrefix = "gno.land/p"
 )
 
-var defaultDeployTxFee = std.NewFee(500000, common.DefaultGasFee)
+var defaultDeployTxFee = std.NewFee(1_000_000_000, common.DefaultGasFee)
+
+// EstimateGasFn is the gas estimation callback
+type EstimateGasFn func(tx *std.Tx) (int64, error)
 
 // Runtime is the base interface for all runtime
 // implementations.
@@ -25,6 +28,7 @@ type Runtime interface {
 		account std.Account,
 		key crypto.PrivKey,
 		chainID string,
+		estimateFn EstimateGasFn,
 	) ([]*std.Tx, error)
 
 	// ConstructTransactions generates and signs the required transactions
@@ -34,6 +38,7 @@ type Runtime interface {
 		accounts []std.Account,
 		transactions uint64,
 		chainID string,
+		estimateFn EstimateGasFn,
 	) ([]*std.Tx, error)
 }
 

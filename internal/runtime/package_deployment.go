@@ -20,6 +20,7 @@ func (c *packageDeployment) Initialize(
 	_ std.Account,
 	_ crypto.PrivKey,
 	_ string,
+	_ EstimateGasFn,
 ) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
 	return nil, nil
@@ -30,6 +31,7 @@ func (c *packageDeployment) ConstructTransactions(
 	accounts []std.Account,
 	transactions uint64,
 	chainID string,
+	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	var (
 		timestamp = time.Now().Unix()
@@ -65,5 +67,6 @@ func (c *packageDeployment) ConstructTransactions(
 		transactions,
 		chainID,
 		getMsgFn,
+		estimateFn,
 	)
 }
