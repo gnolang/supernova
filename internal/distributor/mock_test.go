@@ -8,11 +8,13 @@ import (
 type (
 	broadcastTransactionDelegate func(*std.Tx) error
 	getAccountDelegate           func(string) (*gnoland.GnoAccount, error)
+	estimateGasDelegate          func(*std.Tx) (int64, error)
 )
 
 type mockClient struct {
 	broadcastTransactionFn broadcastTransactionDelegate
 	getAccountFn           getAccountDelegate
+	estimateGasFn          estimateGasDelegate
 }
 
 func (m *mockClient) BroadcastTransaction(tx *std.Tx) error {
@@ -29,4 +31,12 @@ func (m *mockClient) GetAccount(address string) (*gnoland.GnoAccount, error) {
 	}
 
 	return nil, nil
+}
+
+func (m *mockClient) EstimateGas(tx *std.Tx) (int64, error) {
+	if m.estimateGasFn != nil {
+		return m.estimateGasFn(tx)
+	}
+
+	return 0, nil
 }

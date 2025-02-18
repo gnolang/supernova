@@ -31,7 +31,14 @@ func verifyDeployTxCommon(t *testing.T, tx *std.Tx, expectedPrefix string) {
 	assert.Nil(t, vmMsg.Deposit)
 
 	// Make sure the fee is valid
-	assert.Equal(t, tx.Fee, defaultDeployTxFee)
+	assert.Equal(
+		t,
+		std.NewFee(
+			defaultDeployTxFee.GasWanted+gasBuffer,
+			defaultDeployTxFee.GasFee,
+		),
+		tx.Fee,
+	)
 }
 
 func TestRuntime_CommonDeployment(t *testing.T) {
@@ -68,13 +75,28 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			r := GetRuntime(testCase.mode)
 
 			// Make sure there is no initialization logic
-			initialTxs, err := r.Initialize(accounts[0], accountKeys[0], "dummy")
+			initialTxs, err := r.Initialize(
+				accounts[0],
+				accountKeys[0],
+				"dummy",
+				func(_ *std.Tx) (int64, error) {
+					return defaultDeployTxFee.GasWanted, nil
+				},
+			)
 
 			assert.Nil(t, initialTxs)
 			assert.Nil(t, err)
 
 			// Construct the transactions
-			txs, err := r.ConstructTransactions(accountKeys, accounts, transactions, "dummy")
+			txs, err := r.ConstructTransactions(
+				accountKeys,
+				accounts,
+				transactions,
+				"dummy",
+				func(_ *std.Tx) (int64, error) {
+					return defaultDeployTxFee.GasWanted, nil
+				},
+			)
 			if err != nil {
 				t.Fatalf("unable to construct transactions, %v", err)
 			}
@@ -104,7 +126,14 @@ func TestRuntime_RealmCall(t *testing.T) {
 	r := GetRuntime(RealmCall)
 
 	// Make sure the initialization logic is present
-	initialTxs, err := r.Initialize(accounts[0], accountKeys[0], "dummy")
+	initialTxs, err := r.Initialize(
+		accounts[0],
+		accountKeys[0],
+		"dummy",
+		func(_ *std.Tx) (int64, error) {
+			return defaultDeployTxFee.GasWanted, nil
+		},
+	)
 	if err != nil {
 		t.Fatalf("unable to generate init transactions, %v", err)
 	}
@@ -118,7 +147,15 @@ func TestRuntime_RealmCall(t *testing.T) {
 	}
 
 	// Construct the transactions
-	txs, err := r.ConstructTransactions(accountKeys[1:], accounts[1:], transactions, "dummy")
+	txs, err := r.ConstructTransactions(
+		accountKeys[1:],
+		accounts[1:],
+		transactions,
+		"dummy",
+		func(_ *std.Tx) (int64, error) {
+			return defaultDeployTxFee.GasWanted, nil
+		},
+	)
 	if err != nil {
 		t.Fatalf("unable to construct transactions, %v", err)
 	}
@@ -152,6 +189,13 @@ func TestRuntime_RealmCall(t *testing.T) {
 		assert.Contains(t, vmMsg.Args[0], "Account")
 
 		// Make sure the fee is valid
-		assert.Equal(t, tx.Fee, defaultDeployTxFee)
+		assert.Equal(
+			t,
+			std.NewFee(
+				defaultDeployTxFee.GasWanted+gasBuffer,
+				defaultDeployTxFee.GasFee,
+			),
+			tx.Fee,
+		)
 	}
 }

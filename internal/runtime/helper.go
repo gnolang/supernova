@@ -9,6 +9,8 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+const gasBuffer = 10_000 // 10k gas
+
 // msgFn defines the transaction message constructor
 type msgFn func(creator std.Account, index int) std.Msg
 
@@ -31,7 +33,7 @@ func constructTransactions(
 		nonceMap = make(map[uint64]uint64) // accountNumber -> nonce
 	)
 
-	fmt.Printf("\n🔨 Estimating Gas 🔨\n\n")
+	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	// Estimate the fee for the transaction batch
 	txFee := defaultDeployTxFee
@@ -69,12 +71,13 @@ func constructTransactions(
 	clear(tx.Signatures)
 
 	// Use the estimated gas limit
-	txFee.GasWanted = gasWanted + 10_000 // 10k gas buffer
+	txFee.GasWanted = gasWanted + gasBuffer // 10k gas buffer
 
 	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)
 	}
 
+	fmt.Printf("\nEstimated Gas for 1 run tx: %d \n", tx.Fee.GasWanted)
 	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
 	bar := progressbar.Default(int64(transactions), "constructing txs")

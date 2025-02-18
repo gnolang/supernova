@@ -79,7 +79,7 @@ func (r *realmCall) Initialize(
 	clear(tx.Signatures)
 
 	tx.Fee = std.NewFee(
-		gasWanted+10_000, // buffer with 10k gas
+		gasWanted+gasBuffer, // buffer with 10k gas
 		common.DefaultGasFee,
 	)
 

@@ -49,7 +49,16 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		}
 	)
 
-	txs, err := constructTransactions(accountKeys, accounts, transactions, "dummy", getMsgFn)
+	txs, err := constructTransactions(
+		accountKeys,
+		accounts,
+		transactions,
+		"dummy",
+		getMsgFn,
+		func(_ *std.Tx) (int64, error) {
+			return defaultDeployTxFee.GasWanted, nil
+		},
+	)
 	require.NoError(t, err)
 
 	assert.Len(t, txs, int(transactions))
@@ -57,7 +66,14 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 	// Make sure the constructed transactions are valid
 	for _, tx := range txs {
 		// Make sure the fee is valid
-		assert.Equal(t, defaultDeployTxFee, tx.Fee)
+		assert.Equal(
+			t,
+			std.NewFee(
+				defaultDeployTxFee.GasWanted+gasBuffer,
+				defaultDeployTxFee.GasFee,
+			),
+			tx.Fee,
+		)
 
 		// Make sure the message is valid
 		if len(tx.Msgs) != 1 {
