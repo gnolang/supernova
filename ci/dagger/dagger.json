@@ -1,0 +1,6 @@
+{
+  "name": "supernova",
+  "engineVersion": "v0.15.2",
+  "sdk": "go",
+  "source": "run-supernova"
+}

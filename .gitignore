@@ -10,3 +10,4 @@ build/*
 
 # Results
 *.json
+!ci/**/*.json
