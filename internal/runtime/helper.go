@@ -39,7 +39,6 @@ func constructTransactions(
 	txFee := defaultDeployTxFee
 
 	// Construct the first tx
-	// Generate the transaction
 	var (
 		creator    = accounts[0]
 		creatorKey = keys[0]
