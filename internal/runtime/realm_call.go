@@ -54,7 +54,7 @@ func (r *realmCall) Initialize(
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		Fee:  defaultDeployTxFee,
+		Fee:  common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice),
 	}
 
 	// Sign it
@@ -78,10 +78,7 @@ func (r *realmCall) Initialize(
 	// and cause the previous ones to be invalid
 	clear(tx.Signatures)
 
-	tx.Fee = std.NewFee(
-		gasWanted+gasBuffer, // buffer with 10k gas
-		common.DefaultGasFee,
-	)
+	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
 
 	if err = signer.SignTx(tx, key, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)

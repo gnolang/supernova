@@ -3,15 +3,12 @@ package runtime
 import (
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
-	"github.com/gnolang/supernova/internal/common"
 )
 
 const (
 	realmPathPrefix   = "gno.land/r"
 	packagePathPrefix = "gno.land/p"
 )
-
-var defaultDeployTxFee = std.NewFee(1_000_000_000, common.DefaultGasFee)
 
 // EstimateGasFn is the gas estimation callback
 type EstimateGasFn func(tx *std.Tx) (int64, error)

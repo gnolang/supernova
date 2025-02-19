@@ -5,6 +5,7 @@ import (
 
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
@@ -36,7 +37,10 @@ func constructTransactions(
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	// Estimate the fee for the transaction batch
-	txFee := defaultDeployTxFee
+	txFee := common.CalculateFeeInRatio(
+		1_000_000,
+		common.DefaultGasPrice,
+	)
 
 	// Construct the first tx
 	var (
@@ -70,7 +74,7 @@ func constructTransactions(
 	clear(tx.Signatures)
 
 	// Use the estimated gas limit
-	txFee.GasWanted = gasWanted + gasBuffer // 10k gas buffer
+	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // 10k gas buffer
 
 	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)

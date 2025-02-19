@@ -5,6 +5,7 @@ import (
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,10 +34,7 @@ func verifyDeployTxCommon(t *testing.T, tx *std.Tx, expectedPrefix string) {
 	// Make sure the fee is valid
 	assert.Equal(
 		t,
-		std.NewFee(
-			defaultDeployTxFee.GasWanted+gasBuffer,
-			defaultDeployTxFee.GasFee,
-		),
+		common.CalculateFeeInRatio(1_000_000+gasBuffer, common.DefaultGasPrice),
 		tx.Fee,
 	)
 }
@@ -80,7 +78,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				accountKeys[0],
 				"dummy",
 				func(_ *std.Tx) (int64, error) {
-					return defaultDeployTxFee.GasWanted, nil
+					return 1_000_000, nil
 				},
 			)
 
@@ -94,7 +92,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				transactions,
 				"dummy",
 				func(_ *std.Tx) (int64, error) {
-					return defaultDeployTxFee.GasWanted, nil
+					return 1_000_000, nil
 				},
 			)
 			if err != nil {
@@ -131,7 +129,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		accountKeys[0],
 		"dummy",
 		func(_ *std.Tx) (int64, error) {
-			return defaultDeployTxFee.GasWanted, nil
+			return 1_000_000, nil
 		},
 	)
 	if err != nil {
@@ -153,7 +151,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		transactions,
 		"dummy",
 		func(_ *std.Tx) (int64, error) {
-			return defaultDeployTxFee.GasWanted, nil
+			return 1_000_000, nil
 		},
 	)
 	if err != nil {
@@ -191,10 +189,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		// Make sure the fee is valid
 		assert.Equal(
 			t,
-			std.NewFee(
-				defaultDeployTxFee.GasWanted+gasBuffer,
-				defaultDeployTxFee.GasFee,
-			),
+			common.CalculateFeeInRatio(1_000_000+gasBuffer, common.DefaultGasPrice),
 			tx.Fee,
 		)
 	}

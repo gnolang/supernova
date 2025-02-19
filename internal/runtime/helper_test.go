@@ -6,6 +6,7 @@ import (
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,7 +57,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		"dummy",
 		getMsgFn,
 		func(_ *std.Tx) (int64, error) {
-			return defaultDeployTxFee.GasWanted, nil
+			return 1_000_000, nil
 		},
 	)
 	require.NoError(t, err)
@@ -68,10 +69,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		// Make sure the fee is valid
 		assert.Equal(
 			t,
-			std.NewFee(
-				defaultDeployTxFee.GasWanted+gasBuffer,
-				defaultDeployTxFee.GasFee,
-			),
+			common.CalculateFeeInRatio(1_000_000+gasBuffer, common.DefaultGasPrice),
 			tx.Fee,
 		)
 
