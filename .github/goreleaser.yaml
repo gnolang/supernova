@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 project_name: supernova
 version: 2
 
@@ -16,10 +17,6 @@ builds:
     goarch:
       - amd64
       - arm64
-      - arm
-    goarm:
-      - 6
-      - 7
 
 gomod:
   proxy: true
@@ -73,34 +70,6 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-  - use: buildx
-    dockerfile: Dockerfile.release
-    goos: linux
-    goarch: arm
-    goarm: 6
-    image_templates:
-      - "ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-armv6"
-      - "ghcr.io/gnolang/{{ .ProjectName }}:latest-armv6"
-    build_flag_templates:
-      - "--platform=linux/arm/v6"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-  - use: buildx
-    dockerfile: Dockerfile.release
-    goos: linux
-    goarch: arm
-    goarm: 7
-    image_templates:
-      - "ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-armv7"
-      - "ghcr.io/gnolang/{{ .ProjectName }}:latest-armv7"
-    build_flag_templates:
-      - "--platform=linux/arm/v7"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
 
 docker_manifests:
   # https://goreleaser.com/customization/docker_manifest/
@@ -108,14 +77,10 @@ docker_manifests:
     image_templates:
       - ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-amd64
       - ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-arm64v8
-      - ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-armv6
-      - ghcr.io/gnolang/{{ .ProjectName }}:{{ .Version }}-armv7
   - name_template: ghcr.io/gnolang/{{ .ProjectName }}:latest
     image_templates:
       - ghcr.io/gnolang/{{ .ProjectName }}:latest-amd64
       - ghcr.io/gnolang/{{ .ProjectName }}:latest-arm64v8
-      - ghcr.io/gnolang/{{ .ProjectName }}:latest-armv6
-      - ghcr.io/gnolang/{{ .ProjectName }}:latest-armv7
 
 docker_signs:
   - cmd: cosign
@@ -145,7 +110,7 @@ sboms:
 release:
   draft: true
   replace_existing_draft: true
-  prerelease: true
+  prerelease: auto
   footer: |
     ### Container Images
 
@@ -155,4 +120,3 @@ release:
     ```
     docker pull ghcr.io/gnolang/{{ .ProjectName }}:{{ .Tag }}
     ```
-
