@@ -22,7 +22,7 @@ jobs:
       - name: Supernova Run
         uses: dagger/dagger-for-github@v7
         env:
-          RPC_URL: https://rpc.gno.land/
+          RPC_URL: https://rpc.gno.land
           CHAIN_ID: portal-loop
         with:
           version: "v0.15.2"
