@@ -8,6 +8,7 @@ import (
 	"github.com/gnolang/gno/gnovm"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/signer"
 )
 
@@ -21,7 +22,12 @@ func newRealmCall() *realmCall {
 	return &realmCall{}
 }
 
-func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID string) ([]*std.Tx, error) {
+func (r *realmCall) Initialize(
+	account std.Account,
+	key crypto.PrivKey,
+	chainID string,
+	estimateFn EstimateGasFn,
+) ([]*std.Tx, error) {
 	// The Realm needs to be deployed before
 	// it can be interacted with
 	r.realmPath = fmt.Sprintf(
@@ -48,7 +54,7 @@ func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID 
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		Fee:  defaultDeployTxFee,
+		Fee:  common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice),
 	}
 
 	// Sign it
@@ -62,6 +68,22 @@ func (r *realmCall) Initialize(account std.Account, key crypto.PrivKey, chainID 
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
+	// Estimate the gas for the initial tx
+	gasWanted, err := estimateFn(tx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to estimate gas: %w", err)
+	}
+
+	// Wipe the signatures, because we will change the fee,
+	// and cause the previous ones to be invalid
+	clear(tx.Signatures)
+
+	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
+
+	if err = signer.SignTx(tx, key, cfg); err != nil {
+		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
+	}
+
 	return []*std.Tx{tx}, nil
 }
 
@@ -70,6 +92,7 @@ func (r *realmCall) ConstructTransactions(
 	accounts []std.Account,
 	transactions uint64,
 	chainID string,
+	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	getMsgFn := func(creator std.Account, index int) std.Msg {
 		return vm.MsgCall{
@@ -86,5 +109,6 @@ func (r *realmCall) ConstructTransactions(
 		transactions,
 		chainID,
 		getMsgFn,
+		estimateFn,
 	)
 }

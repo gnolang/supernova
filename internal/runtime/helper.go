@@ -5,9 +5,12 @@ import (
 
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	"github.com/gnolang/supernova/internal/signer"
 	"github.com/schollz/progressbar/v3"
 )
+
+const gasBuffer = 10_000 // 10k gas
 
 // msgFn defines the transaction message constructor
 type msgFn func(creator std.Account, index int) std.Msg
@@ -20,6 +23,7 @@ func constructTransactions(
 	transactions uint64,
 	chainID string,
 	getMsg msgFn,
+	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	var (
 		txs = make([]*std.Tx, transactions)
@@ -30,6 +34,53 @@ func constructTransactions(
 		nonceMap = make(map[uint64]uint64) // accountNumber -> nonce
 	)
 
+	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
+
+	// Estimate the fee for the transaction batch
+	txFee := common.CalculateFeeInRatio(
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+
+	// Construct the first tx
+	var (
+		creator    = accounts[0]
+		creatorKey = keys[0]
+	)
+
+	tx := &std.Tx{
+		Msgs: []std.Msg{getMsg(creator, 0)},
+		Fee:  txFee,
+	}
+
+	// Sign the transaction
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: creator.GetAccountNumber(),
+		Sequence:      creator.GetSequence(),
+	}
+
+	if err := signer.SignTx(tx, creatorKey, cfg); err != nil {
+		return nil, fmt.Errorf("unable to sign transaction, %w", err)
+	}
+
+	gasWanted, err := estimateFn(tx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to estimate gas, %w", err)
+	}
+
+	// Clear the old signatures, because they need
+	// to be regenerated
+	clear(tx.Signatures)
+
+	// Use the estimated gas limit
+	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // 10k gas buffer
+
+	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
+		return nil, fmt.Errorf("unable to sign transaction, %w", err)
+	}
+
+	fmt.Printf("\nEstimated Gas for 1 run tx: %d \n", tx.Fee.GasWanted)
 	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
 	bar := progressbar.Default(int64(transactions), "constructing txs")
@@ -44,7 +95,7 @@ func constructTransactions(
 
 		tx := &std.Tx{
 			Msgs: []std.Msg{getMsg(creator, i)},
-			Fee:  defaultDeployTxFee,
+			Fee:  txFee,
 		}
 
 		// Fetch the next account nonce

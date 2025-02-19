@@ -5,11 +5,14 @@ import (
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/tm2/pkg/amino"
+	abci "github.com/gnolang/gno/tm2/pkg/bft/abci/types"
 	"github.com/gnolang/gno/tm2/pkg/bft/rpc/client"
 	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
 )
+
+const simulatePath = ".app/simulate"
 
 type Client struct {
 	conn *client.RPCClient
@@ -132,4 +135,38 @@ func (h *Client) GetBlockGasLimit(height int64) (int64, error) {
 	}
 
 	return consensusParams.ConsensusParams.Block.MaxGas, nil
+}
+
+func (h *Client) EstimateGas(tx *std.Tx) (int64, error) {
+	// Prepare the transaction.
+	// The transaction needs to be amino-binary encoded
+	// in order to be estimated
+	encodedTx, err := amino.Marshal(tx)
+	if err != nil {
+		return 0, fmt.Errorf("unable to marshal tx: %w", err)
+	}
+
+	// Perform the simulation query
+	resp, err := h.conn.ABCIQuery(simulatePath, encodedTx)
+	if err != nil {
+		return 0, fmt.Errorf("unable to perform ABCI query: %w", err)
+	}
+
+	// Extract the query response
+	if err = resp.Response.Error; err != nil {
+		return 0, fmt.Errorf("error encountered during ABCI query: %w", err)
+	}
+
+	var deliverTx abci.ResponseDeliverTx
+	if err = amino.Unmarshal(resp.Response.Value, &deliverTx); err != nil {
+		return 0, fmt.Errorf("unable to unmarshal gas estimation response: %w", err)
+	}
+
+	if err = deliverTx.Error; err != nil {
+		return 0, fmt.Errorf("error encountered during gas estimation: %w", err)
+	}
+
+	// Return the actual value returned by the node
+	// for executing the transaction
+	return deliverTx.GasUsed, nil
 }
