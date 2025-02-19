@@ -27,5 +27,5 @@ jobs:
         with:
           version: "v0.15.2"
           verb: call
-          workdir: ci/dagger
+          module: ci/dagger
           args: run-stress-test --src-dir . --chain-id ${CHAIN_ID} --rpc-endpoint ${RPC_URL} --sub-accounts 2 --transactions 10
