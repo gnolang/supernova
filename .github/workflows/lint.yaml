@@ -1,3 +1,5 @@
+name: Lint Go Code
+
 on:
   workflow_call:
   workflow_dispatch:
