@@ -1,3 +1,5 @@
+name: Main Branch - Build & Test
+
 on:
   push:
     branches:

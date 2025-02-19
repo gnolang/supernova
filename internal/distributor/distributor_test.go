@@ -148,12 +148,14 @@ func TestDistributor_Distribute(t *testing.T) {
 					}
 
 					if acc.Equals(accounts[0]) {
+						sendCost := common.CalculateFeeInRatio(100_000, common.DefaultGasPrice)
+
 						return &gnoland.GnoAccount{
 							BaseAccount: *std.NewBaseAccount(
 								acc.PubKey().Address(),
 								std.NewCoins(std.Coin{
 									Denom:  common.Denomination,
-									Amount: int64(numTx) * common.DefaultGasFee.Add(singleCost).Amount,
+									Amount: int64(numTx) * sendCost.GasFee.Add(singleCost).Amount,
 								}),
 								nil,
 								0,

@@ -19,6 +19,7 @@ var errInsufficientFunds = errors.New("insufficient distributor funds")
 type Client interface {
 	GetAccount(address string) (*gnoland.GnoAccount, error)
 	BroadcastTransaction(tx *std.Tx) error
+	EstimateGas(tx *std.Tx) (int64, error)
 }
 
 // Distributor is the process
@@ -66,13 +67,13 @@ func calculateRuntimeCosts(totalTx int64) std.Coin {
 	// NOTE: Since there is no gas estimation support yet, this value
 	// is fixed, but it will change in the future once pricing estimations
 	// are added
-	baseTxCost := common.DefaultGasFee.Add(common.InitialTxCost)
+	baseTxCost := common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice)
 
 	// Each account should have enough funds
 	// to execute the entire run
 	subAccountCost := std.Coin{
 		Denom:  common.Denomination,
-		Amount: totalTx * baseTxCost.Amount,
+		Amount: totalTx * baseTxCost.GasFee.Amount,
 	}
 
 	return subAccountCost
@@ -146,12 +147,15 @@ func (d *Distributor) fundAccounts(
 		return nil, fmt.Errorf("unable to fetch distributor account, %w", err)
 	}
 
-	distributorBalance := distributor.Coins
-	fundableIndex := 0
+	var (
+		distributorBalance = distributor.Coins
+		fundableIndex      = 0
+		defaultFee         = common.CalculateFeeInRatio(100_000, common.DefaultGasPrice)
+	)
 
 	for _, account := range shortAccounts {
-		// The transfer cost is the single run cost (missing balance) + 1ugnot fee (fixed)
-		transferCost := std.NewCoins(common.DefaultGasFee.Add(account.missingFunds))
+		// The transfer cost is the single run cost (missing balance) + approximate transfer cost
+		transferCost := std.NewCoins(defaultFee.GasFee.Add(account.missingFunds))
 
 		if distributorBalance.IsAllLT(transferCost) {
 			// Distributor does not have any more funds
@@ -176,13 +180,10 @@ func (d *Distributor) fundAccounts(
 		return nil, errInsufficientFunds
 	}
 
-	var (
-		// Locally keep track of the nonce, so
-		// there is no need to re-fetch the account again
-		// before signing a future tx
-		nonce      = distributor.Sequence
-		defaultFee = std.NewFee(100000, common.DefaultGasFee)
-	)
+	// Locally keep track of the nonce, so
+	// there is no need to re-fetch the account again
+	// before signing a future tx
+	nonce := distributor.Sequence
 
 	fmt.Printf("Funding %d accounts...\n", len(shortAccounts))
 	bar := progressbar.Default(int64(len(shortAccounts)), "funding short accounts")

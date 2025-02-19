@@ -6,6 +6,7 @@ import (
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
 	"github.com/gnolang/gno/tm2/pkg/std"
+	"github.com/gnolang/supernova/internal/common"
 	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,16 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		}
 	)
 
-	txs, err := constructTransactions(accountKeys, accounts, transactions, "dummy", getMsgFn)
+	txs, err := constructTransactions(
+		accountKeys,
+		accounts,
+		transactions,
+		"dummy",
+		getMsgFn,
+		func(_ *std.Tx) (int64, error) {
+			return 1_000_000, nil
+		},
+	)
 	require.NoError(t, err)
 
 	assert.Len(t, txs, int(transactions))
@@ -57,7 +67,11 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 	// Make sure the constructed transactions are valid
 	for _, tx := range txs {
 		// Make sure the fee is valid
-		assert.Equal(t, defaultDeployTxFee, tx.Fee)
+		assert.Equal(
+			t,
+			common.CalculateFeeInRatio(1_000_000+gasBuffer, common.DefaultGasPrice),
+			tx.Fee,
+		)
 
 		// Make sure the message is valid
 		if len(tx.Msgs) != 1 {
