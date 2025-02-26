@@ -1,4 +1,4 @@
-# NOTE: using `scratch` as BASE image wouls lack of CA certicates
+# NOTE: using `scratch` as BASE image would lack of CA certicates
 FROM golang:1.23-alpine
 COPY supernova /
 ENTRYPOINT [ "/supernova" ]
