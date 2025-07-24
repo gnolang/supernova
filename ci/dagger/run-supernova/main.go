@@ -38,12 +38,13 @@ func (s *Supernova) BuildImage(directory *dagger.Directory) *dagger.Container {
 		WithDirectory("/src", directory).
 		WithWorkdir("/src").
 		WithEnvVariable("CGO_ENABLED", "0").
-		WithExec([]string{"go", "build", "-o", "supernova", "./cmd"})
+		WithExec([]string{"go", "build", "-o", "supernova", "./cmd"}).
+		WithExec([]string{"apk", "add", "--no-cache", "ca-certificates"})
 
 	return dag.Container().
 		From("busybox").
 		WithFile("/bin/supernova", baseBuilder.File("/src/supernova")).
-		WithFile("/etc/ssl/certs/", baseBuilder.File("/etc/ssl/certs/ca-certificates.crt")).
+		WithFile("/etc/ssl/certs/ca-certificates.crt", baseBuilder.File("/etc/ssl/certs/ca-certificates.crt")).
 		WithEntrypoint([]string{"/bin/supernova"})
 }
 
