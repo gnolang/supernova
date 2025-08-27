@@ -49,10 +49,15 @@ func GetGreeting(language Language) string {
 	}
 }
 `
+	gnomodBody = `
+module = "gno.land/r/demo/runtime"
+gno = "0.9"
+`
 )
 
 const (
 	packageName     = "runtime"
 	realmFileName   = "realm.gno"
 	packageFileName = "package.gno"
+	gnomodFileName  = "gnomod.toml"
 )

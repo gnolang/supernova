@@ -27,9 +27,9 @@ func verifyDeployTxCommon(t *testing.T, tx *std.Tx, expectedPrefix string) {
 
 	// Make sure the deploy params are valid
 	assert.Contains(t, vmMsg.Package.Path, expectedPrefix)
-	assert.Len(t, vmMsg.Package.Files, 1)
+	assert.Len(t, vmMsg.Package.Files, 2)
 	assert.NotNil(t, vmMsg.Creator)
-	assert.Nil(t, vmMsg.Deposit)
+	assert.Nil(t, vmMsg.Send)
 
 	// Make sure the fee is valid
 	assert.Equal(

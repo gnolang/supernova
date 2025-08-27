@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
-	"github.com/gnolang/gno/gnovm"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
@@ -40,10 +39,14 @@ func (r *realmCall) Initialize(
 	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
-		Package: &gnovm.MemPackage{
+		Package: &std.MemPackage{
 			Name: packageName,
 			Path: r.realmPath,
-			Files: []*gnovm.MemFile{
+			Files: []*std.MemFile{
+				{
+					Name: gnomodFileName,
+					Body: gnomodBody,
+				},
 				{
 					Name: realmFileName,
 					Body: realmBody,
@@ -87,6 +90,23 @@ func (r *realmCall) Initialize(
 	return []*std.Tx{tx}, nil
 }
 
+func (r *realmCall) CalculateRuntimeCosts(
+	account std.Account,
+	key crypto.PrivKey,
+	chainID string,
+	estimateFn EstimateGasFn,
+	transactions uint64,
+) (std.Coin, error) {
+	return calculateRuntimeCosts(
+		key,
+		account,
+		transactions,
+		chainID,
+		r.getMsgFn,
+		estimateFn,
+	)
+}
+
 func (r *realmCall) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
@@ -94,21 +114,21 @@ func (r *realmCall) ConstructTransactions(
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
-	getMsgFn := func(creator std.Account, index int) std.Msg {
-		return vm.MsgCall{
-			Caller:  creator.GetAddress(),
-			PkgPath: r.realmPath,
-			Func:    methodName,
-			Args:    []string{fmt.Sprintf("Account-%d", index)},
-		}
-	}
-
 	return constructTransactions(
 		keys,
 		accounts,
 		transactions,
 		chainID,
-		getMsgFn,
+		r.getMsgFn,
 		estimateFn,
 	)
+}
+
+func (r *realmCall) getMsgFn(creator std.Account, index int) std.Msg {
+	return vm.MsgCall{
+		Caller:  creator.GetAddress(),
+		PkgPath: r.realmPath,
+		Func:    methodName,
+		Args:    []string{fmt.Sprintf("Account-%d", index)},
+	}
 }

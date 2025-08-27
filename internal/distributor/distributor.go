@@ -42,41 +42,19 @@ func NewDistributor(
 func (d *Distributor) Distribute(
 	distributor crypto.PrivKey,
 	accounts []crypto.Address,
-	transactions uint64,
 	chainID string,
+	calculatedRuntimeCost std.Coin,
 ) ([]std.Account, error) {
 	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
 
-	// Calculate the base fees
-	subAccountCost := calculateRuntimeCosts(int64(transactions))
 	fmt.Printf(
 		"Calculated sub-account cost as %d %s\n",
-		subAccountCost.Amount,
-		subAccountCost.Denom,
+		calculatedRuntimeCost.Amount,
+		calculatedRuntimeCost.Denom,
 	)
 
 	// Fund the accounts
-	return d.fundAccounts(distributor, accounts, subAccountCost, chainID)
-}
-
-// calculateRuntimeCosts calculates the amount of funds
-// each account needs to have in order to participate in the
-// stress test run
-func calculateRuntimeCosts(totalTx int64) std.Coin {
-	// Cost of a single run transaction for the sub-account
-	// NOTE: Since there is no gas estimation support yet, this value
-	// is fixed, but it will change in the future once pricing estimations
-	// are added
-	baseTxCost := common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice)
-
-	// Each account should have enough funds
-	// to execute the entire run
-	subAccountCost := std.Coin{
-		Denom:  common.Denomination,
-		Amount: totalTx * baseTxCost.GasFee.Amount,
-	}
-
-	return subAccountCost
+	return d.fundAccounts(distributor, accounts, calculatedRuntimeCost, chainID)
 }
 
 // fundAccounts attempts to fund accounts that have missing funds,

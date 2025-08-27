@@ -27,6 +27,16 @@ type Runtime interface {
 		chainID string,
 		estimateFn EstimateGasFn,
 	) ([]*std.Tx, error)
+	// CalculateRuntimeCosts calculates the amount of funds
+	// each account needs to have in order to participate in the
+	// stress test run
+	CalculateRuntimeCosts(
+		account std.Account,
+		key crypto.PrivKey,
+		chainID string,
+		estimateFn EstimateGasFn,
+		transactions uint64,
+	) (std.Coin, error)
 
 	// ConstructTransactions generates and signs the required transactions
 	// that will be used in the stress test

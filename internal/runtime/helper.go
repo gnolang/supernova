@@ -128,3 +128,46 @@ func constructTransactions(
 
 	return txs, nil
 }
+
+func calculateRuntimeCosts(
+	key crypto.PrivKey,
+	account std.Account,
+	transactions uint64,
+	chainID string,
+	getMsg msgFn,
+	estimateFn EstimateGasFn,
+) (std.Coin, error) {
+	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
+
+	// Estimate the fee for the transaction batch
+	txFee := common.CalculateFeeInRatio(
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+
+	tx := &std.Tx{
+		Msgs: []std.Msg{getMsg(account, 0)},
+		Fee:  txFee,
+	}
+
+	// Sign the transaction
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: account.GetAccountNumber(),
+		Sequence:      account.GetSequence(),
+	}
+
+	if err := signer.SignTx(tx, key, cfg); err != nil {
+		return std.Coin{}, fmt.Errorf("unable to sign transaction, %w", err)
+	}
+
+	estimatedGas, err := estimateFn(tx)
+	if err != nil {
+		return std.Coin{}, fmt.Errorf("unable to estimate gas, %w", err)
+	}
+
+	return std.Coin{
+		Denom:  common.Denomination,
+		Amount: int64(transactions) * estimatedGas,
+	}, nil
+}
