@@ -125,7 +125,6 @@ func (r *realmCall) ConstructTransactions(
 }
 
 func (r *realmCall) getMsgFn(creator std.Account, index int) std.Msg {
-	fmt.Println("r.realmPath", r.realmPath)
 	return vm.MsgCall{
 		Caller:  creator.GetAddress(),
 		PkgPath: r.realmPath,
