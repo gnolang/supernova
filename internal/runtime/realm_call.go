@@ -79,7 +79,7 @@ func (r *realmCall) Initialize(
 
 	// Wipe the signatures, because we will change the fee,
 	// and cause the previous ones to be invalid
-	clear(tx.Signatures)
+	tx.Signatures = make([]std.Signature, 0)
 
 	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
 
@@ -125,6 +125,7 @@ func (r *realmCall) ConstructTransactions(
 }
 
 func (r *realmCall) getMsgFn(creator std.Account, index int) std.Msg {
+	fmt.Println("r.realmPath", r.realmPath)
 	return vm.MsgCall{
 		Caller:  creator.GetAddress(),
 		PkgPath: r.realmPath,

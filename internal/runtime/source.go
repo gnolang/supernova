@@ -11,7 +11,7 @@ func init() {
 
 // SayHello says hello to the specified name, using
 // the saved greeting
-func SayHello(name string) string {
+func SayHello(cur realm, name string) string {
 	return greeting + " " + name + "!"
 }
 `
@@ -30,7 +30,7 @@ const (
 
 // GetGreeting generates a greeting in
 // the specified language
-func GetGreeting(language Language) string {
+func GetGreeting(cur realm, language Language) string {
 	switch language {
 	case French:
 		return "Bonjour"
