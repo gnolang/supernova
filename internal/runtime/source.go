@@ -30,7 +30,7 @@ const (
 
 // GetGreeting generates a greeting in
 // the specified language
-func GetGreeting(cur realm, language Language) string {
+func GetGreeting(language Language) string {
 	switch language {
 	case French:
 		return "Bonjour"

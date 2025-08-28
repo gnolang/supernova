@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 
+	"github.com/gnolang/gno/tm2/pkg/bft/types"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
@@ -37,8 +38,9 @@ func constructTransactions(
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	// Estimate the fee for the transaction batch
+	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		1_000_000,
+		types.MaxBlockMaxGas,
 		common.DefaultGasPrice,
 	)
 
@@ -140,8 +142,9 @@ func calculateRuntimeCosts(
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	// Estimate the fee for the transaction batch
+	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		1_000_000,
+		types.MaxBlockMaxGas,
 		common.DefaultGasPrice,
 	)
 

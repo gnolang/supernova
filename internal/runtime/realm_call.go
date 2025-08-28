@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
+	"github.com/gnolang/gno/tm2/pkg/bft/types"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
@@ -57,7 +58,8 @@ func (r *realmCall) Initialize(
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		Fee:  common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice),
+		// passing in the maximum block gas, this is just a simulation
+		Fee: common.CalculateFeeInRatio(types.MaxBlockMaxGas, common.DefaultGasPrice),
 	}
 
 	// Sign it
