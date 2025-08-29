@@ -19,6 +19,7 @@ var DefaultGasPrice = std.GasPrice{
 func CalculateFeeInRatio(gasWanted int64, reference std.GasPrice) std.Fee {
 	// required amount = ceil((gas wanted * reference.Price.Amount) / reference.Gas)
 	requiredAmount := (gasWanted*reference.Price.Amount + reference.Gas - 1) / reference.Gas
+
 	return std.Fee{
 		GasWanted: gasWanted,
 		GasFee: std.Coin{
