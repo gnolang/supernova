@@ -54,6 +54,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		accountKeys,
 		accounts,
 		transactions,
+		1_000_000,
 		"dummy",
 		getMsgFn,
 		func(_ *std.Tx) (int64, error) {

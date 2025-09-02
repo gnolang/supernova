@@ -13,6 +13,9 @@ const (
 // EstimateGasFn is the gas estimation callback
 type EstimateGasFn func(tx *std.Tx) (int64, error)
 
+// SignFn is the tx signing callback
+type SignFn func(tx *std.Tx) error
+
 // Runtime is the base interface for all runtime
 // implementations.
 //
@@ -23,18 +26,18 @@ type Runtime interface {
 	// to be executed before the stress test runs, if any
 	Initialize(
 		account std.Account,
-		key crypto.PrivKey,
-		chainID string,
+		signFn SignFn,
 		estimateFn EstimateGasFn,
+		currentMaxGas int64,
 	) ([]*std.Tx, error)
 	// CalculateRuntimeCosts calculates the amount of funds
 	// each account needs to have in order to participate in the
 	// stress test run
 	CalculateRuntimeCosts(
 		account std.Account,
-		key crypto.PrivKey,
-		chainID string,
 		estimateFn EstimateGasFn,
+		signFn SignFn,
+		currentMaxGas int64,
 		transactions uint64,
 	) (std.Coin, error)
 
@@ -44,6 +47,7 @@ type Runtime interface {
 		keys []crypto.PrivKey,
 		accounts []std.Account,
 		transactions uint64,
+		maxGas int64,
 		chainID string,
 		estimateFn EstimateGasFn,
 	) ([]*std.Tx, error)

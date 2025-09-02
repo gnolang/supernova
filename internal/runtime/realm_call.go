@@ -5,11 +5,9 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
-	"github.com/gnolang/gno/tm2/pkg/bft/types"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 )
 
 const methodName = "SayHello"
@@ -24,9 +22,9 @@ func newRealmCall() *realmCall {
 
 func (r *realmCall) Initialize(
 	account std.Account,
-	key crypto.PrivKey,
-	chainID string,
+	signFn SignFn,
 	estimateFn EstimateGasFn,
+	currentMaxGas int64,
 ) ([]*std.Tx, error) {
 	// The Realm needs to be deployed before
 	// it can be interacted with
@@ -59,17 +57,11 @@ func (r *realmCall) Initialize(
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
 		// passing in the maximum block gas, this is just a simulation
-		Fee: common.CalculateFeeInRatio(types.MaxBlockMaxGas, common.DefaultGasPrice),
+		Fee: common.CalculateFeeInRatio(currentMaxGas, common.DefaultGasPrice),
 	}
 
-	// Sign it
-	cfg := signer.SignCfg{
-		ChainID:       chainID,
-		AccountNumber: account.GetAccountNumber(),
-		Sequence:      account.GetSequence(),
-	}
-
-	if err := signer.SignTx(tx, key, cfg); err != nil {
+	err := signFn(tx)
+	if err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
@@ -82,10 +74,10 @@ func (r *realmCall) Initialize(
 	// Wipe the signatures, because we will change the fee,
 	// and cause the previous ones to be invalid
 	tx.Signatures = make([]std.Signature, 0)
-
 	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
 
-	if err = signer.SignTx(tx, key, cfg); err != nil {
+	err = signFn(tx)
+	if err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
@@ -94,17 +86,17 @@ func (r *realmCall) Initialize(
 
 func (r *realmCall) CalculateRuntimeCosts(
 	account std.Account,
-	key crypto.PrivKey,
-	chainID string,
 	estimateFn EstimateGasFn,
+	signFn SignFn,
+	currentMaxGas int64,
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
-		key,
 		account,
 		transactions,
-		chainID,
+		currentMaxGas,
 		r.getMsgFn,
+		signFn,
 		estimateFn,
 	)
 }
@@ -113,6 +105,7 @@ func (r *realmCall) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
@@ -120,6 +113,7 @@ func (r *realmCall) ConstructTransactions(
 		keys,
 		accounts,
 		transactions,
+		maxGas,
 		chainID,
 		r.getMsgFn,
 		estimateFn,

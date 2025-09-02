@@ -3,7 +3,6 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/gnolang/gno/tm2/pkg/bft/types"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
@@ -22,6 +21,7 @@ func constructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
 	chainID string,
 	getMsg msgFn,
 	estimateFn EstimateGasFn,
@@ -40,7 +40,7 @@ func constructTransactions(
 	// Estimate the fee for the transaction batch
 	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		types.MaxBlockMaxGas,
+		maxGas,
 		common.DefaultGasPrice,
 	)
 
@@ -132,11 +132,11 @@ func constructTransactions(
 }
 
 func calculateRuntimeCosts(
-	key crypto.PrivKey,
 	account std.Account,
 	transactions uint64,
-	chainID string,
+	maxBlockMaxGas int64,
 	getMsg msgFn,
+	signFn SignFn,
 	estimateFn EstimateGasFn,
 ) (std.Coin, error) {
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
@@ -144,7 +144,7 @@ func calculateRuntimeCosts(
 	// Estimate the fee for the transaction batch
 	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		types.MaxBlockMaxGas,
+		maxBlockMaxGas,
 		common.DefaultGasPrice,
 	)
 
@@ -153,14 +153,8 @@ func calculateRuntimeCosts(
 		Fee:  txFee,
 	}
 
-	// Sign the transaction
-	cfg := signer.SignCfg{
-		ChainID:       chainID,
-		AccountNumber: account.GetAccountNumber(),
-		Sequence:      account.GetSequence(),
-	}
-
-	if err := signer.SignTx(tx, key, cfg); err != nil {
+	err := signFn(tx)
+	if err != nil {
 		return std.Coin{}, fmt.Errorf("unable to sign transaction, %w", err)
 	}
 
@@ -173,4 +167,17 @@ func calculateRuntimeCosts(
 		Denom:  common.Denomination,
 		Amount: int64(transactions) * estimatedGas,
 	}, nil
+}
+
+func SignTransactionsCb(chainID string, account std.Account, key crypto.PrivKey) SignFn {
+	// Sign the transaction
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: account.GetAccountNumber(),
+		Sequence:      account.GetSequence(),
+	}
+
+	return func(tx *std.Tx) error {
+		return signer.SignTx(tx, key, cfg)
+	}
 }

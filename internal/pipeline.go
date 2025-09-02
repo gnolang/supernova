@@ -66,6 +66,15 @@ func (p *Pipeline) Execute() error {
 	// Initialize the accounts for the runtime
 	accounts := p.initializeAccounts()
 
+	lastBlock, err := p.cli.GetLatestBlockHeight()
+	if err != nil {
+		return fmt.Errorf("unable to get last block, %w", err)
+	}
+
+	maxGas, err := p.cli.GetBlockGasLimit(lastBlock)
+	if err != nil {
+		return fmt.Errorf("unable to get block gas limit, %w", err)
+	}
 	// Predeploy any pending transactions
 	estimatedGas, err := prepareRuntime(
 		mode,
@@ -73,6 +82,7 @@ func (p *Pipeline) Execute() error {
 		p.cfg.ChainID,
 		p.cli,
 		txRuntime,
+		maxGas,
 		p.cfg.Transactions,
 	)
 	if err != nil {
@@ -112,6 +122,7 @@ func (p *Pipeline) Execute() error {
 		runKeys,
 		runAccounts,
 		p.cfg.Transactions,
+		maxGas,
 		p.cfg.ChainID,
 		p.cli.EstimateGas,
 	)
@@ -195,6 +206,7 @@ func prepareRuntime(
 	chainID string,
 	cli pipelineClient,
 	txRuntime runtime.Runtime,
+	currentMaxGas int64,
 	transactions uint64,
 ) (std.Coin, error) {
 	// Get the deployer account
@@ -203,8 +215,10 @@ func prepareRuntime(
 		return std.Coin{}, fmt.Errorf("unable to fetch deployer account, %w", err)
 	}
 
+	signCB := runtime.SignTransactionsCb(chainID, deployer, deployerKey)
+
 	if mode != runtime.RealmCall {
-		return txRuntime.CalculateRuntimeCosts(deployer, deployerKey, chainID, cli.EstimateGas, transactions)
+		return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, transactions)
 	}
 
 	fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
@@ -212,9 +226,9 @@ func prepareRuntime(
 	// Get the predeploy transactions
 	predeployTxs, err := txRuntime.Initialize(
 		deployer,
-		deployerKey,
-		chainID,
+		signCB,
 		cli.EstimateGas,
+		currentMaxGas,
 	)
 	if err != nil {
 		return std.Coin{}, fmt.Errorf("unable to initialize runtime, %w", err)
@@ -233,5 +247,5 @@ func prepareRuntime(
 
 	fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
 
-	return txRuntime.CalculateRuntimeCosts(deployer, deployerKey, chainID, cli.EstimateGas, transactions)
+	return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, transactions)
 }

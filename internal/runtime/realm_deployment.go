@@ -17,9 +17,9 @@ func newRealmDeployment() *realmDeployment {
 
 func (c *realmDeployment) Initialize(
 	_ std.Account,
-	_ crypto.PrivKey,
-	_ string,
+	_ SignFn,
 	_ EstimateGasFn,
+	_ int64,
 ) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
 	return nil, nil
@@ -27,17 +27,17 @@ func (c *realmDeployment) Initialize(
 
 func (c *realmDeployment) CalculateRuntimeCosts(
 	account std.Account,
-	key crypto.PrivKey,
-	chainID string,
 	estimateFn EstimateGasFn,
+	signFn SignFn,
+	currentMaxGas int64,
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
-		key,
 		account,
 		transactions,
-		chainID,
+		currentMaxGas,
 		c.getMsgFn,
+		signFn,
 		estimateFn,
 	)
 }
@@ -75,6 +75,7 @@ func (c *realmDeployment) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
@@ -82,6 +83,7 @@ func (c *realmDeployment) ConstructTransactions(
 		keys,
 		accounts,
 		transactions,
+		maxGas,
 		chainID,
 		c.getMsgFn,
 		estimateFn,

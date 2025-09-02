@@ -75,11 +75,13 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			// Make sure there is no initialization logic
 			initialTxs, err := r.Initialize(
 				accounts[0],
-				accountKeys[0],
-				"dummy",
+				func(_ *std.Tx) error {
+					return nil
+				},
 				func(_ *std.Tx) (int64, error) {
 					return 1_000_000, nil
 				},
+				1_000_000,
 			)
 
 			assert.Nil(t, initialTxs)
@@ -90,6 +92,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				accountKeys,
 				accounts,
 				transactions,
+				1_000_000,
 				"dummy",
 				func(_ *std.Tx) (int64, error) {
 					return 1_000_000, nil
@@ -126,11 +129,13 @@ func TestRuntime_RealmCall(t *testing.T) {
 	// Make sure the initialization logic is present
 	initialTxs, err := r.Initialize(
 		accounts[0],
-		accountKeys[0],
-		"dummy",
+		func(_ *std.Tx) error {
+			return nil
+		},
 		func(_ *std.Tx) (int64, error) {
 			return 1_000_000, nil
 		},
+		1_000_000,
 	)
 	if err != nil {
 		t.Fatalf("unable to generate init transactions, %v", err)
@@ -149,6 +154,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		accountKeys[1:],
 		accounts[1:],
 		transactions,
+		1_000_000,
 		"dummy",
 		func(_ *std.Tx) (int64, error) {
 			return 1_000_000, nil

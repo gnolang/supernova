@@ -17,9 +17,9 @@ func newPackageDeployment() *packageDeployment {
 
 func (c *packageDeployment) Initialize(
 	_ std.Account,
-	_ crypto.PrivKey,
-	_ string,
+	_ SignFn,
 	_ EstimateGasFn,
+	_ int64,
 ) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
 	return nil, nil
@@ -27,17 +27,17 @@ func (c *packageDeployment) Initialize(
 
 func (c *packageDeployment) CalculateRuntimeCosts(
 	account std.Account,
-	key crypto.PrivKey,
-	chainID string,
 	estimateFn EstimateGasFn,
+	signFn SignFn,
+	currentMaxGas int64,
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
-		key,
 		account,
 		transactions,
-		chainID,
+		currentMaxGas,
 		c.getMsgFn,
+		signFn,
 		estimateFn,
 	)
 }
@@ -46,6 +46,7 @@ func (c *packageDeployment) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
@@ -53,6 +54,7 @@ func (c *packageDeployment) ConstructTransactions(
 		keys,
 		accounts,
 		transactions,
+		maxGas,
 		chainID,
 		c.getMsgFn,
 		estimateFn,
