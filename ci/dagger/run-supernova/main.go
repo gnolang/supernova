@@ -13,6 +13,14 @@ const (
 	MNEMONIC             = "source bonus chronic canvas draft south burst lottery vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast"
 )
 
+type supernovaMode string
+
+const (
+	PACKAGE_DEPLOYMENT supernovaMode = "PACKAGE_DEPLOYMENT"
+	REALM_DEPLOYMENT   supernovaMode = "REALM_DEPLOYMENT"
+	REALM_CALL         supernovaMode = "REALM_CALL"
+)
+
 type Supernova struct{}
 
 // Builds Supernova image from code passed into a *dagger.Directory item
@@ -51,7 +59,9 @@ func (s *Supernova) RunStressTest(
 	subAccounts int,
 	// +optional
 	transactions int,
-	// + optional
+	// +default="REALM_DEPLOYMENT"
+	mode string,
+	// +optional
 	srcDir *dagger.Directory,
 ) (int, error) {
 
@@ -65,10 +75,16 @@ func (s *Supernova) RunStressTest(
 		transactions = DEFAULT_TRANSACTIONS
 	}
 
+	runningMode, err := toSupernovaMode(mode)
+	if err != nil {
+		return -1, err
+	}
+
 	return s.buildOrPull(srcDir).
 		WithExec([]string{
 			"-sub-accounts", fmt.Sprintf("%d", subAccounts),
 			"-transactions", fmt.Sprintf("%d", transactions),
+			"-mode", string(runningMode),
 			"-chain-id", chainId,
 			"-url", rpcEndpoint,
 			"-mnemonic", MNEMONIC},
@@ -76,4 +92,17 @@ func (s *Supernova) RunStressTest(
 				UseEntrypoint: true,
 			}).
 		ExitCode(ctx)
+}
+
+func toSupernovaMode(s string) (supernovaMode, error) {
+	switch s {
+	case string(PACKAGE_DEPLOYMENT):
+		return PACKAGE_DEPLOYMENT, nil
+	case string(REALM_DEPLOYMENT):
+		return REALM_DEPLOYMENT, nil
+	case string(REALM_CALL):
+		return REALM_CALL, nil
+	default:
+		return "", fmt.Errorf("invalid supernova oode: %s", s)
+	}
 }
