@@ -6,6 +6,7 @@ import (
 
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/crypto/bip39"
+	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/batcher"
 	"github.com/gnolang/supernova/internal/client"
 	"github.com/gnolang/supernova/internal/collector"
@@ -65,14 +66,32 @@ func (p *Pipeline) Execute() error {
 	// Initialize the accounts for the runtime
 	accounts := p.initializeAccounts()
 
+	gasPrice, err := p.cli.FetchGasPrice()
+	if err != nil {
+		return err
+	}
+
+	lastBlock, err := p.cli.GetLatestBlockHeight()
+	if err != nil {
+		return fmt.Errorf("unable to get last block, %w", err)
+	}
+
+	maxGas, err := p.cli.GetBlockGasLimit(lastBlock)
+	if err != nil {
+		return fmt.Errorf("unable to get block gas limit, %w", err)
+	}
 	// Predeploy any pending transactions
-	if err := prepareRuntime(
+	estimatedGas, err := prepareRuntime(
 		mode,
 		accounts[0],
 		p.cfg.ChainID,
 		p.cli,
 		txRuntime,
-	); err != nil {
+		maxGas,
+		gasPrice,
+		p.cfg.Transactions,
+	)
+	if err != nil {
 		return err
 	}
 
@@ -86,8 +105,9 @@ func (p *Pipeline) Execute() error {
 	runAccounts, err := distributor.NewDistributor(p.cli).Distribute(
 		accounts[0],
 		addresses,
-		p.cfg.Transactions,
 		p.cfg.ChainID,
+		gasPrice,
+		estimatedGas,
 	)
 	if err != nil {
 		return fmt.Errorf("unable to distribute funds, %w", err)
@@ -109,6 +129,8 @@ func (p *Pipeline) Execute() error {
 		runKeys,
 		runAccounts,
 		p.cfg.Transactions,
+		maxGas,
+		gasPrice,
 		p.cfg.ChainID,
 		p.cli.EstimateGas,
 	)
@@ -192,28 +214,34 @@ func prepareRuntime(
 	chainID string,
 	cli pipelineClient,
 	txRuntime runtime.Runtime,
-) error {
+	currentMaxGas int64,
+	gasPrice std.GasPrice,
+	transactions uint64,
+) (std.Coin, error) {
+	// Get the deployer account
+	deployer, err := cli.GetAccount(deployerKey.PubKey().Address().String())
+	if err != nil {
+		return std.Coin{}, fmt.Errorf("unable to fetch deployer account, %w", err)
+	}
+
+	signCB := runtime.SignTransactionsCb(chainID, deployer, deployerKey)
+
 	if mode != runtime.RealmCall {
-		return nil
+		return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, gasPrice, transactions)
 	}
 
 	fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
 
-	// Get the deployer account
-	deployer, err := cli.GetAccount(deployerKey.PubKey().Address().String())
-	if err != nil {
-		return fmt.Errorf("unable to fetch deployer account, %w", err)
-	}
-
 	// Get the predeploy transactions
 	predeployTxs, err := txRuntime.Initialize(
 		deployer,
-		deployerKey,
-		chainID,
+		signCB,
 		cli.EstimateGas,
+		currentMaxGas,
+		gasPrice,
 	)
 	if err != nil {
-		return fmt.Errorf("unable to initialize runtime, %w", err)
+		return std.Coin{}, fmt.Errorf("unable to initialize runtime, %w", err)
 	}
 
 	bar := progressbar.Default(int64(len(predeployTxs)), "predeployed txs")
@@ -221,7 +249,7 @@ func prepareRuntime(
 	// Execute the predeploy transactions
 	for _, tx := range predeployTxs {
 		if err := cli.BroadcastTransaction(tx); err != nil {
-			return fmt.Errorf("unable to broadcast predeploy tx, %w", err)
+			return std.Coin{}, fmt.Errorf("unable to broadcast predeploy tx, %w", err)
 		}
 
 		_ = bar.Add(1) //nolint:errcheck // No need to check
@@ -229,5 +257,5 @@ func prepareRuntime(
 
 	fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
 
-	return nil
+	return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, gasPrice, transactions)
 }

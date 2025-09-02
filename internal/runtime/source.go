@@ -11,7 +11,7 @@ func init() {
 
 // SayHello says hello to the specified name, using
 // the saved greeting
-func SayHello(name string) string {
+func SayHello(cur realm, name string) string {
 	return greeting + " " + name + "!"
 }
 `
@@ -49,10 +49,15 @@ func GetGreeting(language Language) string {
 	}
 }
 `
+	gnomodBody = `
+module = "gno.land/r/demo/runtime"
+gno = "0.9"
+`
 )
 
 const (
 	packageName     = "runtime"
 	realmFileName   = "realm.gno"
 	packageFileName = "package.gno"
+	gnomodFileName  = "gnomod.toml"
 )

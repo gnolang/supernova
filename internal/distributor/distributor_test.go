@@ -17,7 +17,10 @@ func TestDistributor_Distribute(t *testing.T) {
 
 	var (
 		numTx      = uint64(1000)
-		singleCost = calculateRuntimeCosts(int64(numTx))
+		singleCost = std.Coin{
+			Denom:  common.Denomination,
+			Amount: int64(numTx) * 100_00,
+		}
 	)
 
 	getAccount := func(address string, accounts []crypto.PrivKey) crypto.PrivKey {
@@ -66,7 +69,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, numTx, "dummy")
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 		if err != nil {
 			t.Fatalf("unable to distribute funds, %v", err)
 		}
@@ -122,7 +125,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, numTx, "dummy")
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 
 		assert.Nil(t, readyAccounts)
 		assert.ErrorIs(t, err, errInsufficientFunds)
@@ -192,7 +195,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, numTx, "dummy")
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 		if err != nil {
 			t.Fatalf("unable to distribute funds, %v", err)
 		}

@@ -5,11 +5,9 @@ import (
 	"time"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
-	"github.com/gnolang/gno/gnovm"
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 	"github.com/gnolang/supernova/internal/common"
-	"github.com/gnolang/supernova/internal/signer"
 )
 
 const methodName = "SayHello"
@@ -24,9 +22,10 @@ func newRealmCall() *realmCall {
 
 func (r *realmCall) Initialize(
 	account std.Account,
-	key crypto.PrivKey,
-	chainID string,
+	signFn SignFn,
 	estimateFn EstimateGasFn,
+	currentMaxGas int64,
+	gasPrice std.GasPrice,
 ) ([]*std.Tx, error) {
 	// The Realm needs to be deployed before
 	// it can be interacted with
@@ -40,10 +39,14 @@ func (r *realmCall) Initialize(
 	// Construct the transaction
 	msg := vm.MsgAddPackage{
 		Creator: account.GetAddress(),
-		Package: &gnovm.MemPackage{
+		Package: &std.MemPackage{
 			Name: packageName,
 			Path: r.realmPath,
-			Files: []*gnovm.MemFile{
+			Files: []*std.MemFile{
+				{
+					Name: gnomodFileName,
+					Body: gnomodBody,
+				},
 				{
 					Name: realmFileName,
 					Body: realmBody,
@@ -54,17 +57,12 @@ func (r *realmCall) Initialize(
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		Fee:  common.CalculateFeeInRatio(1_000_000, common.DefaultGasPrice),
+		// passing in the maximum block gas, this is just a simulation
+		Fee: common.CalculateFeeInRatio(currentMaxGas, gasPrice),
 	}
 
-	// Sign it
-	cfg := signer.SignCfg{
-		ChainID:       chainID,
-		AccountNumber: account.GetAccountNumber(),
-		Sequence:      account.GetSequence(),
-	}
-
-	if err := signer.SignTx(tx, key, cfg); err != nil {
+	err := signFn(tx)
+	if err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
@@ -76,39 +74,62 @@ func (r *realmCall) Initialize(
 
 	// Wipe the signatures, because we will change the fee,
 	// and cause the previous ones to be invalid
-	clear(tx.Signatures)
+	tx.Signatures = make([]std.Signature, 0)
+	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, gasPrice) // buffer with 10k gas
 
-	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
-
-	if err = signer.SignTx(tx, key, cfg); err != nil {
+	err = signFn(tx)
+	if err != nil {
 		return nil, fmt.Errorf("unable to sign initialize transaction, %w", err)
 	}
 
 	return []*std.Tx{tx}, nil
 }
 
+func (r *realmCall) CalculateRuntimeCosts(
+	account std.Account,
+	estimateFn EstimateGasFn,
+	signFn SignFn,
+	currentMaxGas int64,
+	gasPrice std.GasPrice,
+	transactions uint64,
+) (std.Coin, error) {
+	return calculateRuntimeCosts(
+		account,
+		transactions,
+		currentMaxGas,
+		gasPrice,
+		r.getMsgFn,
+		signFn,
+		estimateFn,
+	)
+}
+
 func (r *realmCall) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
+	gasPrice std.GasPrice,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
-	getMsgFn := func(creator std.Account, index int) std.Msg {
-		return vm.MsgCall{
-			Caller:  creator.GetAddress(),
-			PkgPath: r.realmPath,
-			Func:    methodName,
-			Args:    []string{fmt.Sprintf("Account-%d", index)},
-		}
-	}
-
 	return constructTransactions(
 		keys,
 		accounts,
 		transactions,
+		maxGas,
+		gasPrice,
 		chainID,
-		getMsgFn,
+		r.getMsgFn,
 		estimateFn,
 	)
+}
+
+func (r *realmCall) getMsgFn(creator std.Account, index int) std.Msg {
+	return vm.MsgCall{
+		Caller:  creator.GetAddress(),
+		PkgPath: r.realmPath,
+		Func:    methodName,
+		Args:    []string{fmt.Sprintf("Account-%d", index)},
+	}
 }

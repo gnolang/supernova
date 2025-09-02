@@ -21,6 +21,8 @@ func constructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
+	maxGas int64,
+	gasPrice std.GasPrice,
 	chainID string,
 	getMsg msgFn,
 	estimateFn EstimateGasFn,
@@ -37,9 +39,10 @@ func constructTransactions(
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	// Estimate the fee for the transaction batch
+	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		1_000_000,
-		common.DefaultGasPrice,
+		maxGas,
+		gasPrice,
 	)
 
 	// Construct the first tx
@@ -74,7 +77,7 @@ func constructTransactions(
 	clear(tx.Signatures)
 
 	// Use the estimated gas limit
-	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // 10k gas buffer
+	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, gasPrice) // 10k gas buffer
 
 	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)
@@ -127,4 +130,56 @@ func constructTransactions(
 	fmt.Printf("✅ Successfully constructed %d transactions\n", transactions)
 
 	return txs, nil
+}
+
+func calculateRuntimeCosts(
+	account std.Account,
+	transactions uint64,
+	maxBlockMaxGas int64,
+	gasPrice std.GasPrice,
+	getMsg msgFn,
+	signFn SignFn,
+	estimateFn EstimateGasFn,
+) (std.Coin, error) {
+	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
+
+	// Estimate the fee for the transaction batch
+	// passing in the maximum block gas, this is just a simulation
+	txFee := common.CalculateFeeInRatio(
+		maxBlockMaxGas,
+		gasPrice,
+	)
+
+	tx := &std.Tx{
+		Msgs: []std.Msg{getMsg(account, 0)},
+		Fee:  txFee,
+	}
+
+	err := signFn(tx)
+	if err != nil {
+		return std.Coin{}, fmt.Errorf("unable to sign transaction, %w", err)
+	}
+
+	estimatedGas, err := estimateFn(tx)
+	if err != nil {
+		return std.Coin{}, fmt.Errorf("unable to estimate gas, %w", err)
+	}
+
+	return std.Coin{
+		Denom:  common.Denomination,
+		Amount: int64(transactions) * estimatedGas,
+	}, nil
+}
+
+func SignTransactionsCb(chainID string, account std.Account, key crypto.PrivKey) SignFn {
+	// Sign the transaction
+	cfg := signer.SignCfg{
+		ChainID:       chainID,
+		AccountNumber: account.GetAccountNumber(),
+		Sequence:      account.GetSequence(),
+	}
+
+	return func(tx *std.Tx) error {
+		return signer.SignTx(tx, key, cfg)
+	}
 }
