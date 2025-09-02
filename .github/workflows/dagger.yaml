@@ -6,26 +6,26 @@ on:
     - cron: '0 1 * * *' 
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: main
-
   supernova:
     name: supernova-ci
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Get Dagger version
+        id: dagger_version
+        uses: sagikazarmark/dagger-version-action@v0.0.2
+        with:
+          path: ci/dagger/run-supernova/
+      
       - name: Supernova Run
         uses: dagger/dagger-for-github@v7
         env:
           RPC_URL: https://rpc.gno.land
-          CHAIN_ID: portal-loop
+          CHAIN_ID: staging
         with:
-          version: "v0.18.8"
+          version: ${{ steps.dagger_version.outputs.version }}
           verb: call
-          module: ci/dagger
+          module: ci/dagger/run-supernova/
           args: run-stress-test --src-dir . --chain-id ${CHAIN_ID} --rpc-endpoint ${RPC_URL} --sub-accounts 2 --transactions 10
