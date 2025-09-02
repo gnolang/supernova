@@ -12,7 +12,10 @@ import (
 	"github.com/gnolang/supernova/internal/common"
 )
 
-const simulatePath = ".app/simulate"
+const (
+	simulatePath = ".app/simulate"
+	gaspricePath = "auth/gasprice"
+)
 
 type Client struct {
 	conn *client.RPCClient
@@ -169,4 +172,21 @@ func (h *Client) EstimateGas(tx *std.Tx) (int64, error) {
 	// Return the actual value returned by the node
 	// for executing the transaction
 	return deliverTx.GasUsed, nil
+}
+
+func (h *Client) FetchGasPrice() (std.GasPrice, error) {
+	// Perform auth/gasprice
+	gp := std.GasPrice{}
+
+	qres, err := h.conn.ABCIQuery(gaspricePath, []byte{})
+	if err != nil {
+		return gp, err
+	}
+
+	err = amino.UnmarshalJSON(qres.Response.Data, &gp)
+	if err != nil {
+		return gp, err
+	}
+
+	return gp, nil
 }

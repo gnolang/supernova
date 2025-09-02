@@ -20,6 +20,7 @@ func (c *packageDeployment) Initialize(
 	_ SignFn,
 	_ EstimateGasFn,
 	_ int64,
+	_ std.GasPrice,
 ) ([]*std.Tx, error) {
 	// No extra setup needed for this runtime type
 	return nil, nil
@@ -30,12 +31,14 @@ func (c *packageDeployment) CalculateRuntimeCosts(
 	estimateFn EstimateGasFn,
 	signFn SignFn,
 	currentMaxGas int64,
+	gasPrice std.GasPrice,
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
 		account,
 		transactions,
 		currentMaxGas,
+		gasPrice,
 		c.getMsgFn,
 		signFn,
 		estimateFn,
@@ -47,6 +50,7 @@ func (c *packageDeployment) ConstructTransactions(
 	accounts []std.Account,
 	transactions uint64,
 	maxGas int64,
+	gasPrice std.GasPrice,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
@@ -55,6 +59,7 @@ func (c *packageDeployment) ConstructTransactions(
 		accounts,
 		transactions,
 		maxGas,
+		gasPrice,
 		chainID,
 		c.getMsgFn,
 		estimateFn,

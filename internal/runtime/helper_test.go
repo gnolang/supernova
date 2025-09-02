@@ -55,6 +55,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		accounts,
 		transactions,
 		1_000_000,
+		common.DefaultGasPrice,
 		"dummy",
 		getMsgFn,
 		func(_ *std.Tx) (int64, error) {

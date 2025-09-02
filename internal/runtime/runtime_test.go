@@ -82,6 +82,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 					return 1_000_000, nil
 				},
 				1_000_000,
+				common.DefaultGasPrice,
 			)
 
 			assert.Nil(t, initialTxs)
@@ -93,6 +94,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				accounts,
 				transactions,
 				1_000_000,
+				common.DefaultGasPrice,
 				"dummy",
 				func(_ *std.Tx) (int64, error) {
 					return 1_000_000, nil
@@ -136,6 +138,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 			return 1_000_000, nil
 		},
 		1_000_000,
+		common.DefaultGasPrice,
 	)
 	if err != nil {
 		t.Fatalf("unable to generate init transactions, %v", err)
@@ -155,6 +158,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		accounts[1:],
 		transactions,
 		1_000_000,
+		common.DefaultGasPrice,
 		"dummy",
 		func(_ *std.Tx) (int64, error) {
 			return 1_000_000, nil

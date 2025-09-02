@@ -20,6 +20,7 @@ type Client interface {
 	GetAccount(address string) (*gnoland.GnoAccount, error)
 	BroadcastTransaction(tx *std.Tx) error
 	EstimateGas(tx *std.Tx) (int64, error)
+	FetchGasPrice() (std.GasPrice, error)
 }
 
 // Distributor is the process
@@ -43,6 +44,7 @@ func (d *Distributor) Distribute(
 	distributor crypto.PrivKey,
 	accounts []crypto.Address,
 	chainID string,
+	gasPrice std.GasPrice,
 	calculatedRuntimeCost std.Coin,
 ) ([]std.Account, error) {
 	fmt.Printf("\n💸 Starting Fund Distribution 💸\n\n")
@@ -54,7 +56,7 @@ func (d *Distributor) Distribute(
 	)
 
 	// Fund the accounts
-	return d.fundAccounts(distributor, accounts, calculatedRuntimeCost, chainID)
+	return d.fundAccounts(distributor, accounts, calculatedRuntimeCost, chainID, gasPrice)
 }
 
 // fundAccounts attempts to fund accounts that have missing funds,
@@ -64,6 +66,7 @@ func (d *Distributor) fundAccounts(
 	accounts []crypto.Address,
 	singleRunCost std.Coin,
 	chainID string,
+	gasPrice std.GasPrice,
 ) ([]std.Account, error) {
 	type shortAccount struct {
 		missingFunds std.Coin
@@ -128,7 +131,7 @@ func (d *Distributor) fundAccounts(
 	var (
 		distributorBalance = distributor.Coins
 		fundableIndex      = 0
-		defaultFee         = common.CalculateFeeInRatio(100_000, common.DefaultGasPrice)
+		defaultFee         = common.CalculateFeeInRatio(100_000, gasPrice)
 	)
 
 	for _, account := range shortAccounts {

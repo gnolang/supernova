@@ -25,6 +25,7 @@ func (r *realmCall) Initialize(
 	signFn SignFn,
 	estimateFn EstimateGasFn,
 	currentMaxGas int64,
+	gasPrice std.GasPrice,
 ) ([]*std.Tx, error) {
 	// The Realm needs to be deployed before
 	// it can be interacted with
@@ -57,7 +58,7 @@ func (r *realmCall) Initialize(
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
 		// passing in the maximum block gas, this is just a simulation
-		Fee: common.CalculateFeeInRatio(currentMaxGas, common.DefaultGasPrice),
+		Fee: common.CalculateFeeInRatio(currentMaxGas, gasPrice),
 	}
 
 	err := signFn(tx)
@@ -74,7 +75,7 @@ func (r *realmCall) Initialize(
 	// Wipe the signatures, because we will change the fee,
 	// and cause the previous ones to be invalid
 	tx.Signatures = make([]std.Signature, 0)
-	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // buffer with 10k gas
+	tx.Fee = common.CalculateFeeInRatio(gasWanted+gasBuffer, gasPrice) // buffer with 10k gas
 
 	err = signFn(tx)
 	if err != nil {
@@ -89,12 +90,14 @@ func (r *realmCall) CalculateRuntimeCosts(
 	estimateFn EstimateGasFn,
 	signFn SignFn,
 	currentMaxGas int64,
+	gasPrice std.GasPrice,
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
 		account,
 		transactions,
 		currentMaxGas,
+		gasPrice,
 		r.getMsgFn,
 		signFn,
 		estimateFn,
@@ -106,6 +109,7 @@ func (r *realmCall) ConstructTransactions(
 	accounts []std.Account,
 	transactions uint64,
 	maxGas int64,
+	gasPrice std.GasPrice,
 	chainID string,
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
@@ -114,6 +118,7 @@ func (r *realmCall) ConstructTransactions(
 		accounts,
 		transactions,
 		maxGas,
+		gasPrice,
 		chainID,
 		r.getMsgFn,
 		estimateFn,

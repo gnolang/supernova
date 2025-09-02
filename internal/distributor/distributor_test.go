@@ -69,7 +69,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", singleCost)
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 		if err != nil {
 			t.Fatalf("unable to distribute funds, %v", err)
 		}
@@ -125,7 +125,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", singleCost)
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 
 		assert.Nil(t, readyAccounts)
 		assert.ErrorIs(t, err, errInsufficientFunds)
@@ -195,7 +195,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			addresses = append(addresses, account.PubKey().Address())
 		}
 
-		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", singleCost)
+		readyAccounts, err := d.Distribute(accounts[0], addresses, "dummy", common.DefaultGasPrice, singleCost)
 		if err != nil {
 			t.Fatalf("unable to distribute funds, %v", err)
 		}

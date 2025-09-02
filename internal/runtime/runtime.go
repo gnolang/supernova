@@ -29,6 +29,7 @@ type Runtime interface {
 		signFn SignFn,
 		estimateFn EstimateGasFn,
 		currentMaxGas int64,
+		gasPrice std.GasPrice,
 	) ([]*std.Tx, error)
 	// CalculateRuntimeCosts calculates the amount of funds
 	// each account needs to have in order to participate in the
@@ -38,6 +39,7 @@ type Runtime interface {
 		estimateFn EstimateGasFn,
 		signFn SignFn,
 		currentMaxGas int64,
+		gasPrice std.GasPrice,
 		transactions uint64,
 	) (std.Coin, error)
 
@@ -48,6 +50,7 @@ type Runtime interface {
 		accounts []std.Account,
 		transactions uint64,
 		maxGas int64,
+		gasPrice std.GasPrice,
 		chainID string,
 		estimateFn EstimateGasFn,
 	) ([]*std.Tx, error)

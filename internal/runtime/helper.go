@@ -22,6 +22,7 @@ func constructTransactions(
 	accounts []std.Account,
 	transactions uint64,
 	maxGas int64,
+	gasPrice std.GasPrice,
 	chainID string,
 	getMsg msgFn,
 	estimateFn EstimateGasFn,
@@ -41,7 +42,7 @@ func constructTransactions(
 	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
 		maxGas,
-		common.DefaultGasPrice,
+		gasPrice,
 	)
 
 	// Construct the first tx
@@ -76,7 +77,7 @@ func constructTransactions(
 	clear(tx.Signatures)
 
 	// Use the estimated gas limit
-	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, common.DefaultGasPrice) // 10k gas buffer
+	txFee = common.CalculateFeeInRatio(gasWanted+gasBuffer, gasPrice) // 10k gas buffer
 
 	if err = signer.SignTx(tx, creatorKey, cfg); err != nil {
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)
@@ -135,6 +136,7 @@ func calculateRuntimeCosts(
 	account std.Account,
 	transactions uint64,
 	maxBlockMaxGas int64,
+	gasPrice std.GasPrice,
 	getMsg msgFn,
 	signFn SignFn,
 	estimateFn EstimateGasFn,
@@ -145,7 +147,7 @@ func calculateRuntimeCosts(
 	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
 		maxBlockMaxGas,
-		common.DefaultGasPrice,
+		gasPrice,
 	)
 
 	tx := &std.Tx{

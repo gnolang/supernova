@@ -66,6 +66,11 @@ func (p *Pipeline) Execute() error {
 	// Initialize the accounts for the runtime
 	accounts := p.initializeAccounts()
 
+	gasPrice, err := p.cli.FetchGasPrice()
+	if err != nil {
+		return err
+	}
+
 	lastBlock, err := p.cli.GetLatestBlockHeight()
 	if err != nil {
 		return fmt.Errorf("unable to get last block, %w", err)
@@ -83,6 +88,7 @@ func (p *Pipeline) Execute() error {
 		p.cli,
 		txRuntime,
 		maxGas,
+		gasPrice,
 		p.cfg.Transactions,
 	)
 	if err != nil {
@@ -100,6 +106,7 @@ func (p *Pipeline) Execute() error {
 		accounts[0],
 		addresses,
 		p.cfg.ChainID,
+		gasPrice,
 		estimatedGas,
 	)
 	if err != nil {
@@ -123,6 +130,7 @@ func (p *Pipeline) Execute() error {
 		runAccounts,
 		p.cfg.Transactions,
 		maxGas,
+		gasPrice,
 		p.cfg.ChainID,
 		p.cli.EstimateGas,
 	)
@@ -207,6 +215,7 @@ func prepareRuntime(
 	cli pipelineClient,
 	txRuntime runtime.Runtime,
 	currentMaxGas int64,
+	gasPrice std.GasPrice,
 	transactions uint64,
 ) (std.Coin, error) {
 	// Get the deployer account
@@ -218,7 +227,7 @@ func prepareRuntime(
 	signCB := runtime.SignTransactionsCb(chainID, deployer, deployerKey)
 
 	if mode != runtime.RealmCall {
-		return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, transactions)
+		return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, gasPrice, transactions)
 	}
 
 	fmt.Printf("\n✨ Starting Predeployment Procedure ✨\n\n")
@@ -229,6 +238,7 @@ func prepareRuntime(
 		signCB,
 		cli.EstimateGas,
 		currentMaxGas,
+		gasPrice,
 	)
 	if err != nil {
 		return std.Coin{}, fmt.Errorf("unable to initialize runtime, %w", err)
@@ -247,5 +257,5 @@ func prepareRuntime(
 
 	fmt.Printf("✅ Successfully predeployed %d transactions\n", len(predeployTxs))
 
-	return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, transactions)
+	return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, gasPrice, transactions)
 }
