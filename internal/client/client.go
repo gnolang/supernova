@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
@@ -49,12 +50,12 @@ func (h *Client) CreateBatch() common.Batch {
 	return &Batch{batch: h.conn.NewBatch()}
 }
 
-func (h *Client) ExecuteABCIQuery(path string, data []byte) (*core_types.ResultABCIQuery, error) {
-	return h.conn.ABCIQuery(path, data)
+func (h *Client) ExecuteABCIQuery(ctx context.Context, path string, data []byte) (*core_types.ResultABCIQuery, error) {
+	return h.conn.ABCIQuery(ctx, path, data)
 }
 
-func (h *Client) GetLatestBlockHeight() (int64, error) {
-	status, err := h.conn.Status()
+func (h *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
+	status, err := h.conn.Status(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch status, %w", err)
 	}
@@ -62,25 +63,25 @@ func (h *Client) GetLatestBlockHeight() (int64, error) {
 	return status.SyncInfo.LatestBlockHeight, nil
 }
 
-func (h *Client) GetBlock(height *int64) (*core_types.ResultBlock, error) {
-	return h.conn.Block(height)
+func (h *Client) GetBlock(ctx context.Context, height *int64) (*core_types.ResultBlock, error) {
+	return h.conn.Block(ctx, height)
 }
 
-func (h *Client) GetBlockResults(height *int64) (*core_types.ResultBlockResults, error) {
-	return h.conn.BlockResults(height)
+func (h *Client) GetBlockResults(ctx context.Context, height *int64) (*core_types.ResultBlockResults, error) {
+	return h.conn.BlockResults(ctx, height)
 }
 
-func (h *Client) GetConsensusParams(height *int64) (*core_types.ResultConsensusParams, error) {
-	return h.conn.ConsensusParams(height)
+func (h *Client) GetConsensusParams(ctx context.Context, height *int64) (*core_types.ResultConsensusParams, error) {
+	return h.conn.ConsensusParams(ctx, height)
 }
 
-func (h *Client) BroadcastTransaction(tx *std.Tx) error {
+func (h *Client) BroadcastTransaction(ctx context.Context, tx *std.Tx) error {
 	marshalledTx, err := amino.Marshal(tx)
 	if err != nil {
 		return fmt.Errorf("unable to marshal transaction, %w", err)
 	}
 
-	res, err := h.conn.BroadcastTxCommit(marshalledTx)
+	res, err := h.conn.BroadcastTxCommit(ctx, marshalledTx)
 	if err != nil {
 		return fmt.Errorf("unable to broadcast transaction, %w", err)
 	}
@@ -96,8 +97,9 @@ func (h *Client) BroadcastTransaction(tx *std.Tx) error {
 	return nil
 }
 
-func (h *Client) GetAccount(address string) (*gnoland.GnoAccount, error) {
+func (h *Client) GetAccount(ctx context.Context, address string) (*gnoland.GnoAccount, error) {
 	queryResult, err := h.conn.ABCIQuery(
+		ctx,
 		fmt.Sprintf("auth/accounts/%s", address),
 		[]byte{},
 	)
@@ -117,8 +119,8 @@ func (h *Client) GetAccount(address string) (*gnoland.GnoAccount, error) {
 	return &acc, nil
 }
 
-func (h *Client) GetBlockGasUsed(height int64) (int64, error) {
-	blockRes, err := h.conn.BlockResults(&height)
+func (h *Client) GetBlockGasUsed(ctx context.Context, height int64) (int64, error) {
+	blockRes, err := h.conn.BlockResults(ctx, &height)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch block results, %w", err)
 	}
@@ -131,8 +133,8 @@ func (h *Client) GetBlockGasUsed(height int64) (int64, error) {
 	return gasUsed, nil
 }
 
-func (h *Client) GetBlockGasLimit(height int64) (int64, error) {
-	consensusParams, err := h.conn.ConsensusParams(&height)
+func (h *Client) GetBlockGasLimit(ctx context.Context, height int64) (int64, error) {
+	consensusParams, err := h.conn.ConsensusParams(ctx, &height)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch block info, %w", err)
 	}
@@ -140,7 +142,7 @@ func (h *Client) GetBlockGasLimit(height int64) (int64, error) {
 	return consensusParams.ConsensusParams.Block.MaxGas, nil
 }
 
-func (h *Client) EstimateGas(tx *std.Tx) (int64, error) {
+func (h *Client) EstimateGas(ctx context.Context, tx *std.Tx) (int64, error) {
 	// Prepare the transaction.
 	// The transaction needs to be amino-binary encoded
 	// in order to be estimated
@@ -150,7 +152,7 @@ func (h *Client) EstimateGas(tx *std.Tx) (int64, error) {
 	}
 
 	// Perform the simulation query
-	resp, err := h.conn.ABCIQuery(simulatePath, encodedTx)
+	resp, err := h.conn.ABCIQuery(ctx, simulatePath, encodedTx)
 	if err != nil {
 		return 0, fmt.Errorf("unable to perform ABCI query: %w", err)
 	}
@@ -174,11 +176,11 @@ func (h *Client) EstimateGas(tx *std.Tx) (int64, error) {
 	return deliverTx.GasUsed, nil
 }
 
-func (h *Client) FetchGasPrice() (std.GasPrice, error) {
+func (h *Client) FetchGasPrice(ctx context.Context) (std.GasPrice, error) {
 	// Perform auth/gasprice
 	gp := std.GasPrice{}
 
-	qres, err := h.conn.ABCIQuery(gaspricePath, []byte{})
+	qres, err := h.conn.ABCIQuery(ctx, gaspricePath, []byte{})
 	if err != nil {
 		return gp, err
 	}

@@ -1,6 +1,7 @@
 package distributor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -17,10 +18,10 @@ import (
 var errInsufficientFunds = errors.New("insufficient distributor funds")
 
 type Client interface {
-	GetAccount(address string) (*gnoland.GnoAccount, error)
-	BroadcastTransaction(tx *std.Tx) error
-	EstimateGas(tx *std.Tx) (int64, error)
-	FetchGasPrice() (std.GasPrice, error)
+	GetAccount(ctx context.Context, address string) (*gnoland.GnoAccount, error)
+	BroadcastTransaction(ctx context.Context, tx *std.Tx) error
+	EstimateGas(ctx context.Context, tx *std.Tx) (int64, error)
+	FetchGasPrice(ctx context.Context) (std.GasPrice, error)
 }
 
 // Distributor is the process
