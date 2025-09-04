@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"context"
+
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
@@ -11,7 +13,7 @@ const (
 )
 
 // EstimateGasFn is the gas estimation callback
-type EstimateGasFn func(tx *std.Tx) (int64, error)
+type EstimateGasFn func(ctx context.Context, tx *std.Tx) (int64, error)
 
 // SignFn is the tx signing callback
 type SignFn func(tx *std.Tx) error
@@ -57,14 +59,14 @@ type Runtime interface {
 }
 
 // GetRuntime fetches the specified runtime, if any
-func GetRuntime(runtimeType Type) Runtime {
+func GetRuntime(ctx context.Context, runtimeType Type) Runtime {
 	switch runtimeType {
 	case RealmCall:
-		return newRealmCall()
+		return newRealmCall(ctx)
 	case RealmDeployment:
-		return newRealmDeployment()
+		return newRealmDeployment(ctx)
 	case PackageDeployment:
-		return newPackageDeployment()
+		return newPackageDeployment(ctx)
 	default:
 		return nil
 	}

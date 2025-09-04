@@ -1,12 +1,14 @@
 package batcher
 
 import (
+	"context"
+
 	"github.com/gnolang/supernova/internal/common"
 )
 
 type Client interface {
 	CreateBatch() common.Batch
-	GetLatestBlockHeight() (int64, error)
+	GetLatestBlockHeight(ctx context.Context) (int64, error)
 }
 
 // TxBatchResult contains batching results

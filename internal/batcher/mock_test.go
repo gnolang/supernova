@@ -1,12 +1,14 @@
 package batcher
 
 import (
+	"context"
+
 	"github.com/gnolang/supernova/internal/common"
 )
 
 type (
 	createBatchDelegate          func() common.Batch
-	getLatestBlockHeightDelegate func() (int64, error)
+	getLatestBlockHeightDelegate func(context.Context) (int64, error)
 )
 
 type mockClient struct {
@@ -22,9 +24,9 @@ func (m *mockClient) CreateBatch() common.Batch {
 	return nil
 }
 
-func (m *mockClient) GetLatestBlockHeight() (int64, error) {
+func (m *mockClient) GetLatestBlockHeight(ctx context.Context) (int64, error) {
 	if m.getLatestBlockHeightFn != nil {
-		return m.getLatestBlockHeightFn()
+		return m.getLatestBlockHeightFn(ctx)
 	}
 
 	return 0, nil

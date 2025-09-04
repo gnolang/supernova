@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -14,10 +15,13 @@ const methodName = "SayHello"
 
 type realmCall struct {
 	realmPath string
+	ctx       context.Context
 }
 
-func newRealmCall() *realmCall {
-	return &realmCall{}
+func newRealmCall(ctx context.Context) *realmCall {
+	return &realmCall{
+		ctx: ctx,
+	}
 }
 
 func (r *realmCall) Initialize(
@@ -67,7 +71,7 @@ func (r *realmCall) Initialize(
 	}
 
 	// Estimate the gas for the initial tx
-	gasWanted, err := estimateFn(tx)
+	gasWanted, err := estimateFn(r.ctx, tx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to estimate gas: %w", err)
 	}
@@ -94,6 +98,7 @@ func (r *realmCall) CalculateRuntimeCosts(
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
+		r.ctx,
 		account,
 		transactions,
 		currentMaxGas,
@@ -114,6 +119,7 @@ func (r *realmCall) ConstructTransactions(
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	return constructTransactions(
+		r.ctx,
 		keys,
 		accounts,
 		transactions,

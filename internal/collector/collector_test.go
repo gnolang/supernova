@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"crypto/rand"
 	"testing"
 	"time"
@@ -58,7 +59,7 @@ func TestCollector_GetRunResults(t *testing.T) {
 		gasUsed  = int64(100)
 
 		mockClient = &mockClient{
-			getBlockFn: func(height *int64) (*core_types.ResultBlock, error) {
+			getBlockFn: func(ctx context.Context, height *int64) (*core_types.ResultBlock, error) {
 				if *height > int64(numTxs) {
 					t.Fatalf("invalid height requested")
 				}
@@ -80,17 +81,17 @@ func TestCollector_GetRunResults(t *testing.T) {
 					},
 				}, nil
 			},
-			getLatestBlockHeightFn: func() (int64, error) {
+			getLatestBlockHeightFn: func(ctx context.Context) (int64, error) {
 				return int64(numTxs), nil
 			},
-			getBlockGasLimitFn: func(height int64) (int64, error) {
+			getBlockGasLimitFn: func(ctx context.Context, height int64) (int64, error) {
 				if height > int64(numTxs) {
 					t.Fatalf("invalid height requested")
 				}
 
 				return gasLimit, nil
 			},
-			getBlockGasUsedFn: func(height int64) (int64, error) {
+			getBlockGasUsedFn: func(ctx context.Context, height int64) (int64, error) {
 				if height > int64(numTxs) {
 					t.Fatalf("invalid height requested")
 				}
@@ -101,7 +102,7 @@ func TestCollector_GetRunResults(t *testing.T) {
 	)
 
 	// Create the collector
-	c := NewCollector(mockClient)
+	c := NewCollector(context.Background(), mockClient)
 	c.requestTimeout = time.Second * 0
 
 	// Collect the results

@@ -55,7 +55,7 @@ func (h *Client) ExecuteABCIQuery(ctx context.Context, path string, data []byte)
 }
 
 func (h *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
-	status, err := h.conn.Status(ctx)
+	status, err := h.conn.Status(ctx, nil)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch status, %w", err)
 	}
@@ -143,6 +143,7 @@ func (h *Client) GetBlockGasLimit(ctx context.Context, height int64) (int64, err
 }
 
 func (h *Client) EstimateGas(ctx context.Context, tx *std.Tx) (int64, error) {
+	fmt.Println(tx.Fee)
 	// Prepare the transaction.
 	// The transaction needs to be amino-binary encoded
 	// in order to be estimated

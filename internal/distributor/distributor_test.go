@@ -1,6 +1,7 @@
 package distributor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
@@ -40,7 +41,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			accounts = testutils.GenerateAccounts(t, 10)
 
 			mockClient = &mockClient{
-				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
+				getAccountFn: func(ctx context.Context, address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
 						t.Fatal("invalid account requested")
@@ -60,6 +61,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
+			context.Background(),
 			mockClient,
 		)
 
@@ -96,7 +98,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			accounts = testutils.GenerateAccounts(t, 10)
 
 			mockClient = &mockClient{
-				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
+				getAccountFn: func(ctx context.Context, address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
 						t.Fatal("invalid account requested")
@@ -116,6 +118,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
+			context.Background(),
 			mockClient,
 		)
 
@@ -144,7 +147,7 @@ func TestDistributor_Distribute(t *testing.T) {
 			capturedBroadcasts = make([]*std.Tx, 0)
 
 			mockClient = &mockClient{
-				getAccountFn: func(address string) (*gnoland.GnoAccount, error) {
+				getAccountFn: func(ctx context.Context, address string) (*gnoland.GnoAccount, error) {
 					acc := getAccount(address, accounts)
 					if acc == nil {
 						t.Fatal("invalid account requested")
@@ -177,7 +180,7 @@ func TestDistributor_Distribute(t *testing.T) {
 						),
 					}, nil
 				},
-				broadcastTransactionFn: func(tx *std.Tx) error {
+				broadcastTransactionFn: func(ctx context.Context, tx *std.Tx) error {
 					capturedBroadcasts = append(capturedBroadcasts, tx)
 
 					return nil
@@ -186,6 +189,7 @@ func TestDistributor_Distribute(t *testing.T) {
 		)
 
 		d := NewDistributor(
+			context.Background(),
 			mockClient,
 		)
 

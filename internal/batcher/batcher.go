@@ -1,6 +1,7 @@
 package batcher
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -16,12 +17,14 @@ import (
 // to the Gno Tendermint node
 type Batcher struct {
 	cli Client
+	ctx context.Context
 }
 
 // NewBatcher creates a new Batcher instance
-func NewBatcher(cli Client) *Batcher {
+func NewBatcher(ctx context.Context, cli Client) *Batcher {
 	return &Batcher{
 		cli: cli,
+		ctx: ctx,
 	}
 }
 
@@ -31,7 +34,7 @@ func (b *Batcher) BatchTransactions(txs []*std.Tx, batchSize int) (*TxBatchResul
 	fmt.Printf("\n📦 Batching Transactions 📦\n\n")
 
 	// Note the current latest block
-	latest, err := b.cli.GetLatestBlockHeight()
+	latest, err := b.cli.GetLatestBlockHeight(b.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch latest block %w", err)
 	}

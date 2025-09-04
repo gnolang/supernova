@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gnolang/gno/tm2/pkg/crypto"
@@ -18,6 +19,7 @@ type msgFn func(creator std.Account, index int) std.Msg
 // constructTransactions constructs and signs the transactions
 // using the passed in message generator and signer
 func constructTransactions(
+	ctx context.Context,
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
@@ -67,7 +69,7 @@ func constructTransactions(
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)
 	}
 
-	gasWanted, err := estimateFn(tx)
+	gasWanted, err := estimateFn(ctx, tx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to estimate gas, %w", err)
 	}
@@ -133,6 +135,7 @@ func constructTransactions(
 }
 
 func calculateRuntimeCosts(
+	ctx context.Context,
 	account std.Account,
 	transactions uint64,
 	maxBlockMaxGas int64,
@@ -160,7 +163,7 @@ func calculateRuntimeCosts(
 		return std.Coin{}, fmt.Errorf("unable to sign transaction, %w", err)
 	}
 
-	estimatedGas, err := estimateFn(tx)
+	estimatedGas, err := estimateFn(ctx, tx)
 	if err != nil {
 		return std.Coin{}, fmt.Errorf("unable to estimate gas, %w", err)
 	}

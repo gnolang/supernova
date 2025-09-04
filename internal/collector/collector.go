@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -17,15 +18,17 @@ var errTimeout = errors.New("collector timed out")
 // transaction indexing is introduced
 type Collector struct {
 	cli Client
+	ctx context.Context
 
 	requestTimeout time.Duration
 }
 
 // NewCollector creates a new instance of the collector
-func NewCollector(cli Client) *Collector {
+func NewCollector(ctx context.Context, cli Client) *Collector {
 	return &Collector{
 		cli:            cli,
 		requestTimeout: time.Second * 2,
+		ctx:            ctx,
 	}
 }
 
@@ -58,7 +61,7 @@ func (c *Collector) GetRunResult(
 		case <-timeout:
 			return nil, errTimeout
 		case <-time.After(c.requestTimeout):
-			latest, err := c.cli.GetLatestBlockHeight()
+			latest, err := c.cli.GetLatestBlockHeight(c.ctx)
 			if err != nil {
 				return nil, fmt.Errorf("unable to fetch latest block height, %w", err)
 			}
@@ -71,7 +74,7 @@ func (c *Collector) GetRunResult(
 			// Iterate over each block and find relevant transactions
 			for blockNum := start; blockNum <= latest; blockNum++ {
 				// Fetch the block
-				block, err := c.cli.GetBlock(&blockNum)
+				block, err := c.cli.GetBlock(c.ctx, &blockNum)
 				if err != nil {
 					return nil, fmt.Errorf("unable to fetch block, %w", err)
 				}
@@ -87,13 +90,13 @@ func (c *Collector) GetRunResult(
 				_ = bar.Add(belong) //nolint:errcheck // No need to check
 
 				// Fetch the total gas used by transactions
-				blockGasUsed, err := c.cli.GetBlockGasUsed(blockNum)
+				blockGasUsed, err := c.cli.GetBlockGasUsed(c.ctx, blockNum)
 				if err != nil {
 					return nil, fmt.Errorf("unable to fetch block gas used, %w", err)
 				}
 
 				// Fetch the block gas limit
-				blockGasLimit, err := c.cli.GetBlockGasLimit(blockNum)
+				blockGasLimit, err := c.cli.GetBlockGasLimit(c.ctx, blockNum)
 				if err != nil {
 					return nil, fmt.Errorf("unable to fetch block gas limit, %w", err)
 				}
