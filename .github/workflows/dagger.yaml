@@ -9,6 +9,12 @@ jobs:
   supernova:
     name: supernova-ci
     runs-on: ubuntu-latest
+    # runs-on: [ self-hosted, Linux, X64, dagger ]
+    strategy:
+      matrix:
+        env: [PACKAGE_DEPLOYMENT, REALM_DEPLOYMENT, REALM_CALL]
+      max-parallel: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -28,4 +34,4 @@ jobs:
           version: ${{ steps.dagger_version.outputs.version }}
           verb: call
           module: ci/dagger/run-supernova/
-          args: run-stress-test --src-dir . --chain-id ${CHAIN_ID} --rpc-endpoint ${RPC_URL} --sub-accounts 2 --transactions 10
+          args: run-stress-test --src-dir . --chain-id ${CHAIN_ID} --rpc-endpoint ${RPC_URL} --mode ${{ matrix.env }} --sub-accounts 2 --transactions 100

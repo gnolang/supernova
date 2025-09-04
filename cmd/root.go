@@ -111,5 +111,5 @@ func execMain(cfg *internal.Config) error {
 		return fmt.Errorf("unable to create pipeline, %w", err)
 	}
 
-	return pipeline.Execute()
+	return pipeline.Execute(context.Background())
 }

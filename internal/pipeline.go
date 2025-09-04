@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -54,34 +55,35 @@ func NewPipeline(cfg *Config) (*Pipeline, error) {
 }
 
 // Execute runs the entire pipeline process
-func (p *Pipeline) Execute() error {
+func (p *Pipeline) Execute(ctx context.Context) error {
 	var (
 		mode = runtime.Type(p.cfg.Mode)
 
-		txBatcher   = batcher.NewBatcher(p.cli)
-		txCollector = collector.NewCollector(p.cli)
-		txRuntime   = runtime.GetRuntime(mode)
+		txBatcher   = batcher.NewBatcher(ctx, p.cli)
+		txCollector = collector.NewCollector(ctx, p.cli)
+		txRuntime   = runtime.GetRuntime(ctx, mode)
 	)
 
 	// Initialize the accounts for the runtime
 	accounts := p.initializeAccounts()
 
-	gasPrice, err := p.cli.FetchGasPrice()
+	gasPrice, err := p.cli.FetchGasPrice(ctx)
 	if err != nil {
 		return err
 	}
 
-	lastBlock, err := p.cli.GetLatestBlockHeight()
+	lastBlock, err := p.cli.GetLatestBlockHeight(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to get last block, %w", err)
 	}
 
-	maxGas, err := p.cli.GetBlockGasLimit(lastBlock)
+	maxGas, err := p.cli.GetBlockGasLimit(ctx, lastBlock)
 	if err != nil {
 		return fmt.Errorf("unable to get block gas limit, %w", err)
 	}
 	// Predeploy any pending transactions
 	estimatedGas, err := prepareRuntime(
+		ctx,
 		mode,
 		accounts[0],
 		p.cfg.ChainID,
@@ -102,7 +104,7 @@ func (p *Pipeline) Execute() error {
 	}
 
 	// Distribute the funds to sub-accounts
-	runAccounts, err := distributor.NewDistributor(p.cli).Distribute(
+	runAccounts, err := distributor.NewDistributor(ctx, p.cli).Distribute(
 		accounts[0],
 		addresses,
 		p.cfg.ChainID,
@@ -209,6 +211,7 @@ func (p *Pipeline) handleResults(runResult *collector.RunResult) error {
 // prepareRuntime prepares the runtime by pre-deploying
 // any pending transactions
 func prepareRuntime(
+	ctx context.Context,
 	mode runtime.Type,
 	deployerKey crypto.PrivKey,
 	chainID string,
@@ -219,7 +222,7 @@ func prepareRuntime(
 	transactions uint64,
 ) (std.Coin, error) {
 	// Get the deployer account
-	deployer, err := cli.GetAccount(deployerKey.PubKey().Address().String())
+	deployer, err := cli.GetAccount(ctx, deployerKey.PubKey().Address().String())
 	if err != nil {
 		return std.Coin{}, fmt.Errorf("unable to fetch deployer account, %w", err)
 	}
@@ -248,7 +251,7 @@ func prepareRuntime(
 
 	// Execute the predeploy transactions
 	for _, tx := range predeployTxs {
-		if err := cli.BroadcastTransaction(tx); err != nil {
+		if err := cli.BroadcastTransaction(ctx, tx); err != nil {
 			return std.Coin{}, fmt.Errorf("unable to broadcast predeploy tx, %w", err)
 		}
 

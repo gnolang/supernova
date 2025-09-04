@@ -1,16 +1,17 @@
 package collector
 
 import (
+	"context"
 	"time"
 
 	core_types "github.com/gnolang/gno/tm2/pkg/bft/rpc/core/types"
 )
 
 type Client interface {
-	GetBlock(height *int64) (*core_types.ResultBlock, error)
-	GetBlockGasUsed(height int64) (int64, error)
-	GetBlockGasLimit(height int64) (int64, error)
-	GetLatestBlockHeight() (int64, error)
+	GetBlock(ctx context.Context, height *int64) (*core_types.ResultBlock, error)
+	GetBlockGasUsed(ctx context.Context, height int64) (int64, error)
+	GetBlockGasLimit(ctx context.Context, height int64) (int64, error)
+	GetLatestBlockHeight(ctx context.Context) (int64, error)
 }
 
 // RunResult is the complete test-run result

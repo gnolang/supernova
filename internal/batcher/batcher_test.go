@@ -2,6 +2,7 @@ package batcher
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"fmt"
 	"testing"
@@ -85,7 +86,7 @@ func TestBatcher_BatchTransactions(t *testing.T) {
 	)
 
 	// Create the batcher
-	b := NewBatcher(mockClient)
+	b := NewBatcher(context.Background(), mockClient)
 
 	// Batch the transactions
 	res, err := b.BatchTransactions(txs, batchSize)

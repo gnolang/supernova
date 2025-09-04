@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,10 +10,14 @@ import (
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
 
-type realmDeployment struct{}
+type realmDeployment struct {
+	ctx context.Context
+}
 
-func newRealmDeployment() *realmDeployment {
-	return &realmDeployment{}
+func newRealmDeployment(ctx context.Context) *realmDeployment {
+	return &realmDeployment{
+		ctx: ctx,
+	}
 }
 
 func (c *realmDeployment) Initialize(
@@ -35,6 +40,7 @@ func (c *realmDeployment) CalculateRuntimeCosts(
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
+		c.ctx,
 		account,
 		transactions,
 		currentMaxGas,
@@ -84,6 +90,7 @@ func (c *realmDeployment) ConstructTransactions(
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	return constructTransactions(
+		c.ctx,
 		keys,
 		accounts,
 		transactions,

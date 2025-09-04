@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/gnolang/gno v0.0.0-20250826105341-fba926958b6b
+	github.com/gnolang/gno v0.0.0-20250903154725-71e9ac3593a9
 	github.com/peterbourgon/ff/v3 v3.4.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/stretchr/testify v1.10.0

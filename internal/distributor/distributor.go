@@ -1,6 +1,7 @@
 package distributor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -17,24 +18,27 @@ import (
 var errInsufficientFunds = errors.New("insufficient distributor funds")
 
 type Client interface {
-	GetAccount(address string) (*gnoland.GnoAccount, error)
-	BroadcastTransaction(tx *std.Tx) error
-	EstimateGas(tx *std.Tx) (int64, error)
-	FetchGasPrice() (std.GasPrice, error)
+	GetAccount(ctx context.Context, address string) (*gnoland.GnoAccount, error)
+	BroadcastTransaction(ctx context.Context, tx *std.Tx) error
+	EstimateGas(ctx context.Context, tx *std.Tx) (int64, error)
+	FetchGasPrice(ctx context.Context) (std.GasPrice, error)
 }
 
 // Distributor is the process
 // that manages sub-account distributions
 type Distributor struct {
 	cli Client
+	ctx context.Context
 }
 
 // NewDistributor creates a new instance of the distributor
 func NewDistributor(
+	ctx context.Context,
 	cli Client,
 ) *Distributor {
 	return &Distributor{
 		cli: cli,
+		ctx: ctx,
 	}
 }
 
@@ -85,7 +89,7 @@ func (d *Distributor) fundAccounts(
 	// before the stress test starts
 	for _, account := range accounts {
 		// Fetch the account balance
-		subAccount, err := d.cli.GetAccount(account.String())
+		subAccount, err := d.cli.GetAccount(d.ctx, account.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch sub-account, %w", err)
 		}
@@ -123,7 +127,7 @@ func (d *Distributor) fundAccounts(
 	})
 
 	// Figure out how many accounts can actually be funded
-	distributor, err := d.cli.GetAccount(distributorKey.PubKey().Address().String())
+	distributor, err := d.cli.GetAccount(d.ctx, distributorKey.PubKey().Address().String())
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch distributor account, %w", err)
 	}
@@ -197,14 +201,14 @@ func (d *Distributor) fundAccounts(
 		nonce++
 
 		// Broadcast the tx and wait for it to be committed
-		if err := d.cli.BroadcastTransaction(tx); err != nil {
+		if err := d.cli.BroadcastTransaction(d.ctx, tx); err != nil {
 			return nil, fmt.Errorf("unable to broadcast tx with commit, %w", err)
 		}
 
 		// Since accounts can be uninitialized on the node, after the
 		// transfer they will have acquired a storage slot, and need
 		// to be re-fetched for their data (Sequence + Account Number)
-		nodeAccount, err := d.cli.GetAccount(account.address.String())
+		nodeAccount, err := d.cli.GetAccount(d.ctx, account.address.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch account, %w", err)
 		}

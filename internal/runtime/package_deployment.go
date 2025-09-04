@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,10 +10,14 @@ import (
 	"github.com/gnolang/gno/tm2/pkg/std"
 )
 
-type packageDeployment struct{}
+type packageDeployment struct {
+	ctx context.Context
+}
 
-func newPackageDeployment() *packageDeployment {
-	return &packageDeployment{}
+func newPackageDeployment(ctx context.Context) *packageDeployment {
+	return &packageDeployment{
+		ctx: ctx,
+	}
 }
 
 func (c *packageDeployment) Initialize(
@@ -35,6 +40,7 @@ func (c *packageDeployment) CalculateRuntimeCosts(
 	transactions uint64,
 ) (std.Coin, error) {
 	return calculateRuntimeCosts(
+		c.ctx,
 		account,
 		transactions,
 		currentMaxGas,
@@ -55,6 +61,7 @@ func (c *packageDeployment) ConstructTransactions(
 	estimateFn EstimateGasFn,
 ) ([]*std.Tx, error) {
 	return constructTransactions(
+		c.ctx,
 		keys,
 		accounts,
 		transactions,

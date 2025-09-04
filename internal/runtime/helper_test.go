@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gnolang/gno/gno.land/pkg/gnoland"
@@ -51,6 +52,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 	)
 
 	txs, err := constructTransactions(
+		context.Background(),
 		accountKeys,
 		accounts,
 		transactions,
@@ -58,7 +60,7 @@ func TestHelper_ConstructTransactions(t *testing.T) {
 		common.DefaultGasPrice,
 		"dummy",
 		getMsgFn,
-		func(_ *std.Tx) (int64, error) {
+		func(_ context.Context, _ *std.Tx) (int64, error) {
 			return 1_000_000, nil
 		},
 	)

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gnolang/gno/gno.land/pkg/sdk/vm"
@@ -70,7 +71,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			)
 
 			// Get the runtime
-			r := GetRuntime(testCase.mode)
+			r := GetRuntime(context.Background(), testCase.mode)
 
 			// Make sure there is no initialization logic
 			initialTxs, err := r.Initialize(
@@ -78,7 +79,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				func(_ *std.Tx) error {
 					return nil
 				},
-				func(_ *std.Tx) (int64, error) {
+				func(_ context.Context, _ *std.Tx) (int64, error) {
 					return 1_000_000, nil
 				},
 				1_000_000,
@@ -96,7 +97,7 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 				1_000_000,
 				common.DefaultGasPrice,
 				"dummy",
-				func(_ *std.Tx) (int64, error) {
+				func(_ context.Context, _ *std.Tx) (int64, error) {
 					return 1_000_000, nil
 				},
 			)
@@ -126,7 +127,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 	)
 
 	// Get the runtime
-	r := GetRuntime(RealmCall)
+	r := GetRuntime(context.Background(), RealmCall)
 
 	// Make sure the initialization logic is present
 	initialTxs, err := r.Initialize(
@@ -134,7 +135,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		func(_ *std.Tx) error {
 			return nil
 		},
-		func(_ *std.Tx) (int64, error) {
+		func(_ context.Context, _ *std.Tx) (int64, error) {
 			return 1_000_000, nil
 		},
 		1_000_000,
@@ -160,7 +161,7 @@ func TestRuntime_RealmCall(t *testing.T) {
 		1_000_000,
 		common.DefaultGasPrice,
 		"dummy",
-		func(_ *std.Tx) (int64, error) {
+		func(_ context.Context, _ *std.Tx) (int64, error) {
 			return 1_000_000, nil
 		},
 	)
