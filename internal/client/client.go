@@ -143,7 +143,6 @@ func (h *Client) GetBlockGasLimit(ctx context.Context, height int64) (int64, err
 }
 
 func (h *Client) EstimateGas(ctx context.Context, tx *std.Tx) (int64, error) {
-	fmt.Println(tx.Fee)
 	// Prepare the transaction.
 	// The transaction needs to be amino-binary encoded
 	// in order to be estimated
