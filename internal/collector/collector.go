@@ -53,6 +53,7 @@ func (c *Collector) GetRunResult(
 	for {
 		// Check if all original transactions
 		// were processed
+		//nolint:staticcheck
 		if processed >= len(txHashes) {
 			break
 		}
