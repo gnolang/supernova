@@ -1,6 +1,9 @@
 name: Dagger Supernova
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
     - cron: '0 1 * * *' 
@@ -11,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [PACKAGE_DEPLOYMENT] # TODO: REALM_DEPLOYMENT, REALM_CALL
+        env: [PACKAGE_DEPLOYMENT, REALM_DEPLOYMENT, REALM_CALL]
       max-parallel: 1
 
     steps:
