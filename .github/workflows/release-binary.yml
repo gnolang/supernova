@@ -20,7 +20,7 @@ jobs:
           go-version: 1.23
 
       - uses: sigstore/cosign-installer@v3.10.0
-      - uses: anchore/sbom-action/download-syft@v0.20.6
+      - uses: anchore/sbom-action/download-syft@v0.20.11
 
       - name: Checkout
         uses: actions/checkout@v5
