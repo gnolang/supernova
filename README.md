@@ -1,9 +1,9 @@
 # Supernova
 
-A stress-testing tool for Gno TM2 networks. Simulates realistic
-transaction patterns and measures performance metrics like TPS
-and block utilization. Use it to benchmark node performance by
-executing transactions under load and analyzing response times.
+A stress-testing tool for Gno TM2 networks. Simulates realistic transaction
+patterns and measures performance metrics like TPS and block utilization.
+Use it to benchmark node performance by executing transactions under load
+and analyzing response times.
 
 ## Table of Contents
 
@@ -46,9 +46,12 @@ make build
   -output results.json
 ```
 
-This runs a stress test against a Gno TM2 node at `http://localhost:26657`, using `5` sub-accounts to send `100` transactions. Results are saved to `results.json`.
+This runs a stress test against a Gno TM2 node at `http://localhost:26657`,
+using `5` sub-accounts to send `100` transactions.
+Results are saved to `results.json`.
 
-For production-grade testing, increase `-sub-accounts` (50-100) and `-transactions` (5000+).
+For production-grade testing, increase `-sub-accounts` (50-100) and
+`-transactions` (5000+).
 
 **Note**: This mnemonic derives the default development gnoland account, which is pre-funded in local environments (e.g., `gnodev`). For other environments, ensure the first address (index 0) has sufficient funds for distribution to subaccounts.
 
@@ -73,13 +76,15 @@ For production-grade testing, increase `-sub-accounts` (50-100) and `-transactio
 | PACKAGE_DEPLOYMENT | Deploys pure packages (stateless libraries) | Testing code storage overhead |
 | REALM_CALL | Deploys one realm, then calls its methods | Simulating production workloads |
 
-For most production scenarios, **REALM_CALL** provides the most relevant metrics since it simulates typical user interactions.
+For most production scenarios, **REALM_CALL** provides the most relevant
+metrics since it simulates typical user interactions.
 
 ## Understanding Results
 
 ### TPS (Transactions Per Second)
 
-Reflects real-world throughput, accounting for transaction propagation, block production intervals, and consensus overhead.
+Reflects real-world throughput, accounting for transaction propagation, block
+production intervals, and consensus overhead.
 
 ### Block Utilization
 
