@@ -2,7 +2,31 @@
 
 A stress-testing tool for Gno TM2 networks. Simulates realistic transaction patterns and measures performance metrics like TPS and block utilization.
 
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [CLI Flags](#cli-flags)
+- [Testing Modes](#testing-modes)
+- [Understanding Results](#understanding-results)
+- [When to Use](#when-to-use)
+
+## Key Features
+
+- Batch transactions for efficient stress testing
+- Multiple modes: REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL
+- Distributed testing through subaccounts
+- Automatic subaccount funding
+- Detailed statistics and JSON output
+
+To view the results of the stress tests, visit the [benchmarks reports for supernova](https://github.com/gnolang/benchmarks/tree/main/reports/supernova).
+
+![Banner](.github/demo.gif)
+
+
 ## Quick Start
+
+Requires Go 1.19 or higher.
 
 ```bash
 # Build
@@ -19,9 +43,11 @@ make build
   -output results.json
 ```
 
+This runs a stress test against a Gno TM2 node at `http://localhost:26657`, using `5` sub-accounts to send `100` transactions. Results are saved to `results.json`.
+
 For production-grade testing, increase `-sub-accounts` (50-100) and `-transactions` (5000+).
 
-**Note**: This mnemonic derives the default development gnoland account, which is pre-funded in local environments (e.g., `gnodev`).
+**Note**: This mnemonic derives the default development gnoland account, which is pre-funded in local environments (e.g., `gnodev`). For other environments, ensure the first address (index 0) has sufficient funds for distribution to subaccounts.
 
 ## CLI Flags
 
@@ -62,11 +88,9 @@ Reflects real-world throughput, accounting for transaction propagation, block pr
 
 ## When to Use
 
-- **Before deployment**: Validate network can handle expected load
-- **After config changes**: Verify block gas limits, timing parameters
-- **Capacity planning**: Determine hardware requirements for target TPS
-- **Benchmarking**: Compare different node setups objectively
-
-## Resources
-
-- [Benchmark reports](https://github.com/gnolang/benchmarks/tree/main/reports/supernova)
+| Scenario | Purpose |
+|----------|---------|
+| Pre-production | Validate network handles expected load |
+| Post-config changes | Verify gas limits and timing parameters |
+| Capacity planning | Determine hardware for target TPS |
+| Benchmarking | Compare node configurations |
