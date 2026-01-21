@@ -1,6 +1,9 @@
 # Supernova
 
-A stress-testing tool for Gno TM2 networks. Simulates realistic transaction patterns and measures performance metrics like TPS and block utilization.
+A stress-testing tool for Gno TM2 networks. Simulates realistic
+transaction patterns and measures performance metrics like TPS
+and block utilization. Use it to benchmark node performance by
+executing transactions under load and analyzing response times.
 
 ## Table of Contents
 
