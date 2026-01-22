@@ -14,7 +14,7 @@ jobs:
           go-version: 1.23
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Go test
         run: go test -shuffle=on -coverprofile coverage.out -timeout 5m ./...
@@ -28,7 +28,7 @@ jobs:
           go-version: 1.23
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Go race test
         run: go test -race -shuffle=on -timeout 5m ./...
