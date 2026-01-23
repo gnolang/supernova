@@ -71,7 +71,10 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			)
 
 			// Get the runtime
-			r := GetRuntime(context.Background(), testCase.mode)
+			r, err := GetRuntime(context.Background(), testCase.mode)
+			if err != nil {
+				t.Fatalf("unable to get runtime: %v", err)
+			}
 
 			// Make sure there is no initialization logic
 			initialTxs, err := r.Initialize(
@@ -127,7 +130,10 @@ func TestRuntime_RealmCall(t *testing.T) {
 	)
 
 	// Get the runtime
-	r := GetRuntime(context.Background(), RealmCall)
+	r, err := GetRuntime(context.Background(), RealmCall)
+	if err != nil {
+		t.Fatalf("unable to get runtime: %v", err)
+	}
 
 	// Make sure the initialization logic is present
 	initialTxs, err := r.Initialize(

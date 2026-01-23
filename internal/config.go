@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 
 	"github.com/gnolang/gno/tm2/pkg/crypto/bip39"
@@ -15,6 +16,7 @@ var (
 	errInvalidSubaccounts  = errors.New("invalid number of subaccounts specified")
 	errInvalidTransactions = errors.New("invalid number of transactions specified")
 	errInvalidBatchSize    = errors.New("invalid batch size specified")
+	errMixRatioRequired    = errors.New("mix-ratio is required for MIXED mode")
 )
 
 var (
@@ -31,6 +33,7 @@ type Config struct {
 	ChainID  string // the chain ID of the cluster
 	Mnemonic string // the mnemonic for the keyring
 	Mode     string // the stress test mode
+	MixRatio string // transaction mix ratios for MIXED mode
 	Output   string // output path for results JSON, if any
 
 	SubAccounts  uint64 // the number of sub-accounts in the run
@@ -69,6 +72,17 @@ func (cfg *Config) Validate() error {
 	// Make sure the batch size is valid
 	if cfg.BatchSize < 1 {
 		return errInvalidBatchSize
+	}
+
+	// Validate mix ratio for MIXED mode
+	if runtime.Type(cfg.Mode) == runtime.Mixed {
+		if cfg.MixRatio == "" {
+			return errMixRatioRequired
+		}
+
+		if _, err := runtime.ParseMixRatio(cfg.MixRatio); err != nil {
+			return fmt.Errorf("invalid mix-ratio: %w", err)
+		}
 	}
 
 	return nil
