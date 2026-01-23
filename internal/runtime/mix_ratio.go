@@ -18,13 +18,13 @@ var (
 	errInsufficientTypes  = errors.New("mix ratio must contain at least 2 types")
 )
 
-type MixRatio struct {
+type mixRatio struct {
 	Type       Type
 	Percentage int
 }
 
 type MixConfig struct {
-	Ratios []MixRatio
+	Ratios []mixRatio
 }
 
 // ParseMixRatio parses a mix ratio string into a MixConfig
@@ -40,7 +40,7 @@ func ParseMixRatio(input string) (*MixConfig, error) {
 	}
 
 	config := &MixConfig{
-		Ratios: make([]MixRatio, 0, len(parts)),
+		Ratios: make([]mixRatio, 0, len(parts)),
 	}
 
 	seenTypes := make(map[Type]bool)
@@ -73,10 +73,10 @@ func ParseMixRatio(input string) (*MixConfig, error) {
 
 // parseRatioPart parses a single TYPE:PERCENTAGE part of the mix ratio
 // Example input: "REALM_CALL:70" and ensures validity
-func parseRatioPart(part string) (MixRatio, error) {
+func parseRatioPart(part string) (mixRatio, error) {
 	colonIdx := strings.LastIndex(part, ":")
 	if colonIdx == -1 {
-		return MixRatio{}, fmt.Errorf("%w: %s", errInvalidRatioFormat, part)
+		return mixRatio{}, fmt.Errorf("%w: %s", errInvalidRatioFormat, part)
 	}
 
 	typeName := strings.TrimSpace(part[:colonIdx])
@@ -84,20 +84,20 @@ func parseRatioPart(part string) (MixRatio, error) {
 
 	percentage, err := strconv.Atoi(percentageStr)
 	if err != nil || percentage < 1 || percentage > 100 {
-		return MixRatio{}, fmt.Errorf("%w: %s", errInvalidPercentage, percentageStr)
+		return mixRatio{}, fmt.Errorf("%w: %s", errInvalidPercentage, percentageStr)
 	}
 
 	runtimeType := Type(typeName)
 
 	if runtimeType == Mixed {
-		return MixRatio{}, errMixedInMix
+		return mixRatio{}, errMixedInMix
 	}
 
 	if !IsMixableRuntime(runtimeType) {
-		return MixRatio{}, fmt.Errorf("%w: %s", errUnknownType, typeName)
+		return mixRatio{}, fmt.Errorf("%w: %s", errUnknownType, typeName)
 	}
 
-	return MixRatio{
+	return mixRatio{
 		Type:       runtimeType,
 		Percentage: percentage,
 	}, nil

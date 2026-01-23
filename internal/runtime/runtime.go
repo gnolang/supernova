@@ -20,10 +20,12 @@ const (
 
 type mixConfigKey struct{}
 
+// WithMixConfig attaches the mix config to the context
 func WithMixConfig(ctx context.Context, config *MixConfig) context.Context {
 	return context.WithValue(ctx, mixConfigKey{}, config)
 }
 
+// GetMixConfig retrieves the mix config from the context, if any
 func GetMixConfig(ctx context.Context) *MixConfig {
 	config, _ := ctx.Value(mixConfigKey{}).(*MixConfig)
 	return config

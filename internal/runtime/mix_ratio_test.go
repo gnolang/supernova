@@ -13,12 +13,12 @@ func TestParseMixRatio_Valid(t *testing.T) {
 	testTable := []struct {
 		name     string
 		input    string
-		expected []MixRatio
+		expected []mixRatio
 	}{
 		{
 			"three-way split",
 			"REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 20},
 				{PackageDeployment, 10},
@@ -27,7 +27,7 @@ func TestParseMixRatio_Valid(t *testing.T) {
 		{
 			"two-way split",
 			"REALM_CALL:50,REALM_DEPLOYMENT:50",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 50},
 				{RealmDeployment, 50},
 			},
@@ -35,7 +35,7 @@ func TestParseMixRatio_Valid(t *testing.T) {
 		{
 			"with spaces",
 			"REALM_CALL:70, REALM_DEPLOYMENT:30",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 30},
 			},
@@ -143,7 +143,7 @@ func TestMixConfig_HasType(t *testing.T) {
 	t.Parallel()
 
 	config := &MixConfig{
-		Ratios: []MixRatio{
+		Ratios: []mixRatio{
 			{RealmCall, 70},
 			{RealmDeployment, 30},
 		},
@@ -160,13 +160,13 @@ func TestMixConfig_CalculateTransactionCounts(t *testing.T) {
 
 	testTable := []struct {
 		name     string
-		ratios   []MixRatio
+		ratios   []mixRatio
 		total    uint64
 		expected map[Type]uint64
 	}{
 		{
 			"exact division",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 20},
 				{PackageDeployment, 10},
@@ -180,7 +180,7 @@ func TestMixConfig_CalculateTransactionCounts(t *testing.T) {
 		},
 		{
 			"with rounding - remainder goes to last",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 30},
 			},
@@ -192,7 +192,7 @@ func TestMixConfig_CalculateTransactionCounts(t *testing.T) {
 		},
 		{
 			"small total with rounding",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 33},
 				{RealmDeployment, 33},
 				{PackageDeployment, 34},
@@ -206,7 +206,7 @@ func TestMixConfig_CalculateTransactionCounts(t *testing.T) {
 		},
 		{
 			"two-way 50/50",
-			[]MixRatio{
+			[]mixRatio{
 				{RealmCall, 50},
 				{PackageDeployment, 50},
 			},
