@@ -122,6 +122,9 @@ func (mc *MixConfig) Validate() error {
 	return nil
 }
 
+// HasType checks if the MixConfig includes the specified runtime type
+// For example in: REALM_CALL:70,REALM_DEPLOYMENT:30, HasType(REALM_CALL) returns true
+// but HasType(PACKAGE_DEPLOYMENT) returns false
 func (mc *MixConfig) HasType(t Type) bool {
 	for _, ratio := range mc.Ratios {
 		if ratio.Type == t {
