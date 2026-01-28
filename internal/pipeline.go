@@ -60,7 +60,11 @@ func (p *Pipeline) Execute(ctx context.Context) error {
 
 	// Setup the context for mixed mode
 	if mode == runtime.Mixed {
-		mixConfig, _ := runtime.ParseMixRatio(p.cfg.MixRatio)
+		mixConfig, err := runtime.ParseMixRatio(p.cfg.MixRatio)
+		if err != nil {
+			return fmt.Errorf("unable to parse mix ratio: %w", err)
+		}
+
 		ctx = runtime.WithMixConfig(ctx, mixConfig)
 	}
 
@@ -240,6 +244,7 @@ func prepareRuntime(
 	signCB := runtime.SignTransactionsCb(chainID, deployer, deployerKey)
 
 	needsPredeploy := mode == runtime.RealmCall
+
 	if mode == runtime.Mixed {
 		mixConfig := runtime.GetMixConfig(ctx)
 		needsPredeploy = mixConfig != nil && mixConfig.HasType(runtime.RealmCall)
