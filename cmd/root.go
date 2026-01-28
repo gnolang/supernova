@@ -65,7 +65,8 @@ func registerFlags(fs *flag.FlagSet, c *internal.Config) {
 		runtime.RealmDeployment.String(),
 		fmt.Sprintf(
 			"the mode for the stress test. Possible modes: [%s, %s, %s, %s]",
-			runtime.RealmDeployment.String(), runtime.PackageDeployment.String(), runtime.RealmCall.String(), runtime.Mixed.String(),
+			runtime.RealmDeployment.String(), runtime.PackageDeployment.String(),
+			runtime.RealmCall.String(), runtime.Mixed.String(),
 		),
 	)
 

@@ -28,6 +28,7 @@ func WithMixConfig(ctx context.Context, config *MixConfig) context.Context {
 // GetMixConfig retrieves the mix config from the context, if any
 func GetMixConfig(ctx context.Context) *MixConfig {
 	config, _ := ctx.Value(mixConfigKey{}).(*MixConfig)
+
 	return config
 }
 
@@ -92,6 +93,7 @@ func GetRuntime(ctx context.Context, runtimeType Type) (Runtime, error) {
 		if config == nil {
 			return nil, errMissingMixConfig
 		}
+
 		return newMixedRuntime(ctx, config), nil
 	default:
 		return nil, errUnknownRuntime

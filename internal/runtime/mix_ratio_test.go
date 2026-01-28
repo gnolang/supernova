@@ -16,26 +16,26 @@ func TestParseMixRatio_Valid(t *testing.T) {
 		expected []mixRatio
 	}{
 		{
-			"three-way split",
-			"REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10",
-			[]mixRatio{
+			name:  "three-way split",
+			input: "REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10",
+			expected: []mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 20},
 				{PackageDeployment, 10},
 			},
 		},
 		{
-			"two-way split",
-			"REALM_CALL:50,REALM_DEPLOYMENT:50",
-			[]mixRatio{
+			name:  "two-way split",
+			input: "REALM_CALL:50,REALM_DEPLOYMENT:50",
+			expected: []mixRatio{
 				{RealmCall, 50},
 				{RealmDeployment, 50},
 			},
 		},
 		{
-			"with spaces",
-			"REALM_CALL:70, REALM_DEPLOYMENT:30",
-			[]mixRatio{
+			name:  "with spaces",
+			input: "REALM_CALL:70, REALM_DEPLOYMENT:30",
+			expected: []mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 30},
 			},
@@ -57,74 +57,74 @@ func TestParseMixRatio_Invalid(t *testing.T) {
 	t.Parallel()
 
 	testTable := []struct {
+		expectedErr error
 		name        string
 		input       string
-		expectedErr error
 	}{
 		{
-			"empty string",
-			"",
-			errEmptyMixRatio,
+			name:        "empty string",
+			input:       "",
+			expectedErr: errEmptyMixRatio,
 		},
 		{
-			"whitespace only",
-			"   ",
-			errEmptyMixRatio,
+			name:        "whitespace only",
+			input:       "   ",
+			expectedErr: errEmptyMixRatio,
 		},
 		{
-			"single type",
-			"REALM_CALL:100",
-			errInsufficientTypes,
+			name:        "single type",
+			input:       "REALM_CALL:100",
+			expectedErr: errInsufficientTypes,
 		},
 		{
-			"missing colon",
-			"REALM_CALL70,REALM_DEPLOYMENT30",
-			errInvalidRatioFormat,
+			name:        "missing colon",
+			input:       "REALM_CALL70,REALM_DEPLOYMENT30",
+			expectedErr: errInvalidRatioFormat,
 		},
 		{
-			"invalid percentage - negative",
-			"REALM_CALL:-10,REALM_DEPLOYMENT:110",
-			errInvalidPercentage,
+			name:        "invalid percentage - negative",
+			input:       "REALM_CALL:-10,REALM_DEPLOYMENT:110",
+			expectedErr: errInvalidPercentage,
 		},
 		{
-			"invalid percentage - zero",
-			"REALM_CALL:0,REALM_DEPLOYMENT:100",
-			errInvalidPercentage,
+			name:        "invalid percentage - zero",
+			input:       "REALM_CALL:0,REALM_DEPLOYMENT:100",
+			expectedErr: errInvalidPercentage,
 		},
 		{
-			"invalid percentage - over 100",
-			"REALM_CALL:101,REALM_DEPLOYMENT:0",
-			errInvalidPercentage,
+			name:        "invalid percentage - over 100",
+			input:       "REALM_CALL:101,REALM_DEPLOYMENT:0",
+			expectedErr: errInvalidPercentage,
 		},
 		{
-			"invalid percentage - not a number",
-			"REALM_CALL:abc,REALM_DEPLOYMENT:50",
-			errInvalidPercentage,
+			name:        "invalid percentage - not a number",
+			input:       "REALM_CALL:abc,REALM_DEPLOYMENT:50",
+			expectedErr: errInvalidPercentage,
 		},
 		{
-			"unknown type",
-			"UNKNOWN_TYPE:50,REALM_DEPLOYMENT:50",
-			errUnknownType,
+			name:        "unknown type",
+			input:       "UNKNOWN_TYPE:50,REALM_DEPLOYMENT:50",
+			expectedErr: errUnknownType,
 		},
 		{
-			"duplicate type",
-			"REALM_CALL:50,REALM_CALL:50",
-			errDuplicateType,
+			name:        "duplicate type",
+			input:       "REALM_CALL:50,REALM_CALL:50",
+			expectedErr: errDuplicateType,
 		},
 		{
-			"MIXED in mix",
-			"MIXED:50,REALM_CALL:50",
-			errMixedInMix,
+			name:        "MIXED in mix",
+			input:       "MIXED:50,REALM_CALL:50",
+			expectedErr: errMixedInMix,
 		},
 		{
-			"sum not 100 - under",
-			"REALM_CALL:40,REALM_DEPLOYMENT:40",
-			errRatioSumNot100,
+			name:        "sum not 100 - under",
+			input:       "REALM_CALL:40,REALM_DEPLOYMENT:40",
+			expectedErr: errRatioSumNot100,
 		},
 		{
-			"sum not 100 - over",
-			"REALM_CALL:60,REALM_DEPLOYMENT:60",
-			errRatioSumNot100,
+			name:        "sum not 100 - over",
+			input:       "REALM_CALL:60,REALM_DEPLOYMENT:60",
+			expectedErr: errRatioSumNot100,
 		},
 	}
 
@@ -160,58 +160,58 @@ func TestMixConfig_CalculateTransactionCounts(t *testing.T) {
 
 	testTable := []struct {
 		name     string
+		expected map[Type]uint64
 		ratios   []mixRatio
 		total    uint64
-		expected map[Type]uint64
 	}{
 		{
-			"exact division",
-			[]mixRatio{
+			name: "exact division",
+			ratios: []mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 20},
 				{PackageDeployment, 10},
 			},
-			100,
-			map[Type]uint64{
+			total: 100,
+			expected: map[Type]uint64{
 				RealmCall:         70,
 				RealmDeployment:   20,
 				PackageDeployment: 10,
 			},
 		},
 		{
-			"with rounding - remainder goes to last",
-			[]mixRatio{
+			name: "with rounding - remainder goes to last",
+			ratios: []mixRatio{
 				{RealmCall, 70},
 				{RealmDeployment, 30},
 			},
-			10,
-			map[Type]uint64{
+			total: 10,
+			expected: map[Type]uint64{
 				RealmCall:       7,
 				RealmDeployment: 3,
 			},
 		},
 		{
-			"small total with rounding",
-			[]mixRatio{
+			name: "small total with rounding",
+			ratios: []mixRatio{
 				{RealmCall, 33},
 				{RealmDeployment, 33},
 				{PackageDeployment, 34},
 			},
-			10,
-			map[Type]uint64{
+			total: 10,
+			expected: map[Type]uint64{
 				RealmCall:         3,
 				RealmDeployment:   3,
 				PackageDeployment: 4,
 			},
 		},
 		{
-			"two-way 50/50",
-			[]mixRatio{
+			name: "two-way 50/50",
+			ratios: []mixRatio{
 				{RealmCall, 50},
 				{PackageDeployment, 50},
 			},
-			100,
-			map[Type]uint64{
+			total: 100,
+			expected: map[Type]uint64{
 				RealmCall:         50,
 				PackageDeployment: 50,
 			},

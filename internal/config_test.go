@@ -11,9 +11,10 @@ import (
 // validBaseConfig returns a config with all fields valid except Mode/MixRatio
 func validBaseConfig() *Config {
 	return &Config{
-		URL:          "http://localhost:26657",
-		ChainID:      "dev",
-		Mnemonic:     "source bonus chronic canvas draft south burst lottery vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast",
+		URL:     "http://localhost:26657",
+		ChainID: "dev",
+		Mnemonic: "source bonus chronic canvas draft south burst lottery " +
+			"vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast",
 		SubAccounts:  10,
 		Transactions: 100,
 		BatchSize:    100,

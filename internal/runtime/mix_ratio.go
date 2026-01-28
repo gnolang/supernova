@@ -59,6 +59,7 @@ func ParseMixRatio(input string) (*MixConfig, error) {
 		if seenTypes[ratio.Type] {
 			return nil, fmt.Errorf("%w: %s", errDuplicateType, ratio.Type)
 		}
+
 		seenTypes[ratio.Type] = true
 
 		config.Ratios = append(config.Ratios, ratio)
@@ -131,6 +132,7 @@ func (mc *MixConfig) HasType(t Type) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -138,6 +140,7 @@ func (mc *MixConfig) HasType(t Type) bool {
 // for each runtime type based on the total and the defined ratios
 func (mc *MixConfig) CalculateTransactionCounts(total uint64) map[Type]uint64 {
 	counts := make(map[Type]uint64)
+
 	var allocated uint64
 
 	for i, ratio := range mc.Ratios {

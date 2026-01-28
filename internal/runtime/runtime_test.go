@@ -321,12 +321,13 @@ func TestRuntime_Mixed_ConstructTransactions_TypeDistribution(t *testing.T) {
 
 	for _, tx := range txs {
 		require.Len(t, tx.Msgs, 1)
+
 		switch msg := tx.Msgs[0].(type) {
 		case vm.MsgCall:
 			realmCalls++
 		case vm.MsgAddPackage:
 			if assert.NotNil(t, msg.Package) {
-				if len(msg.Package.Path) > 0 && msg.Package.Path[:len(packagePathPrefix)] == packagePathPrefix {
+				if msg.Package.Path != "" && msg.Package.Path[:len(packagePathPrefix)] == packagePathPrefix {
 					pkgDeploys++
 				} else {
 					realmDeploys++

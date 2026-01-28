@@ -97,11 +97,11 @@ func (m *mixedRuntime) CalculateRuntimeCosts(
 	gasPrice std.GasPrice,
 	transactions uint64,
 ) (std.Coin, error) {
+	var totalGas int64
+
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
 	txCounts := m.config.CalculateTransactionCounts(transactions)
-	var totalGas int64
-
 	for txType, count := range txCounts {
 		if count == 0 {
 			continue
@@ -224,7 +224,7 @@ func (m *mixedRuntime) ConstructTransactions(
 
 		nonceMap[accountNumber] = nonce + 1
 		txs[i] = tx
-		_ = bar.Add(1)
+		_ = bar.Add(1) //nolint:errcheck // No need to check
 	}
 
 	fmt.Printf("✅ Successfully constructed %d transactions\n", transactions)
@@ -234,13 +234,14 @@ func (m *mixedRuntime) ConstructTransactions(
 
 func (m *mixedRuntime) generateShuffledSequence(txCounts map[Type]uint64) []Type {
 	var sequence []Type
+
 	for txType, count := range txCounts {
 		for i := uint64(0); i < count; i++ {
 			sequence = append(sequence, txType)
 		}
 	}
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec // G404: Weak random number is acceptable here
 	rng.Shuffle(len(sequence), func(i, j int) {
 		sequence[i], sequence[j] = sequence[j], sequence[i]
 	})
