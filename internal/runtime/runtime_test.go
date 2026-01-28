@@ -9,6 +9,7 @@ import (
 	"github.com/gnolang/supernova/internal/common"
 	testutils "github.com/gnolang/supernova/internal/testing"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // verifyDeployTxCommon does common transaction verification
@@ -71,7 +72,10 @@ func TestRuntime_CommonDeployment(t *testing.T) {
 			)
 
 			// Get the runtime
-			r := GetRuntime(context.Background(), testCase.mode)
+			r, err := GetRuntime(context.Background(), testCase.mode)
+			if err != nil {
+				t.Fatalf("unable to get runtime: %v", err)
+			}
 
 			// Make sure there is no initialization logic
 			initialTxs, err := r.Initialize(
@@ -127,7 +131,10 @@ func TestRuntime_RealmCall(t *testing.T) {
 	)
 
 	// Get the runtime
-	r := GetRuntime(context.Background(), RealmCall)
+	r, err := GetRuntime(context.Background(), RealmCall)
+	if err != nil {
+		t.Fatalf("unable to get runtime: %v", err)
+	}
 
 	// Make sure the initialization logic is present
 	initialTxs, err := r.Initialize(
@@ -203,5 +210,254 @@ func TestRuntime_RealmCall(t *testing.T) {
 			common.CalculateFeeInRatio(1_000_000+gasBuffer, common.DefaultGasPrice),
 			tx.Fee,
 		)
+	}
+}
+
+func TestRuntime_Mixed_InitializeWithRealmCall(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmCall, 70},
+			{RealmDeployment, 30},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	accounts := generateAccounts(1)
+
+	initialTxs, err := r.Initialize(
+		accounts[0],
+		func(_ *std.Tx) error { return nil },
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+	require.NoError(t, err)
+	require.Len(t, initialTxs, 1)
+
+	// Verify it's a realm deployment
+	msg, ok := initialTxs[0].Msgs[0].(vm.MsgAddPackage)
+	require.True(t, ok)
+	assert.Contains(t, msg.Package.Path, realmPathPrefix)
+	assert.Len(t, msg.Package.Files, 2)
+}
+
+func TestRuntime_Mixed_InitializeWithoutRealmCall(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmDeployment, 60},
+			{PackageDeployment, 40},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	accounts := generateAccounts(1)
+
+	initialTxs, err := r.Initialize(
+		accounts[0],
+		func(_ *std.Tx) error { return nil },
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+	require.NoError(t, err)
+	assert.Nil(t, initialTxs)
+}
+
+func TestRuntime_Mixed_ConstructTransactions_TypeDistribution(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmCall, 70},
+			{RealmDeployment, 20},
+			{PackageDeployment, 10},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	var (
+		transactions = uint64(100)
+		accounts     = generateAccounts(10)
+		accountKeys  = testutils.GenerateAccounts(t, 10)
+	)
+
+	// Initialize first to set up realmPath for REALM_CALL
+	_, err = r.Initialize(
+		accounts[0],
+		func(_ *std.Tx) error { return nil },
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+	require.NoError(t, err)
+
+	txs, err := r.ConstructTransactions(
+		accountKeys,
+		accounts,
+		transactions,
+		1_000_000,
+		common.DefaultGasPrice,
+		"dummy",
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+	)
+	require.NoError(t, err)
+	require.Len(t, txs, int(transactions))
+
+	// Count transaction types
+	var realmCalls, realmDeploys, pkgDeploys int
+
+	for _, tx := range txs {
+		require.Len(t, tx.Msgs, 1)
+
+		switch msg := tx.Msgs[0].(type) {
+		case vm.MsgCall:
+			realmCalls++
+		case vm.MsgAddPackage:
+			if assert.NotNil(t, msg.Package) {
+				if msg.Package.Path != "" && msg.Package.Path[:len(packagePathPrefix)] == packagePathPrefix {
+					pkgDeploys++
+				} else {
+					realmDeploys++
+				}
+			}
+		}
+	}
+
+	assert.Equal(t, 70, realmCalls)
+	assert.Equal(t, 20, realmDeploys)
+	assert.Equal(t, 10, pkgDeploys)
+}
+
+func TestRuntime_Mixed_ConstructTransactions_NonceManagement(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmCall, 50},
+			{RealmDeployment, 50},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	var (
+		transactions = uint64(20)
+		accounts     = generateAccounts(2)
+		accountKeys  = testutils.GenerateAccounts(t, 2)
+	)
+
+	// Initialize to set up realmPath
+	_, err = r.Initialize(
+		accounts[0],
+		func(_ *std.Tx) error { return nil },
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+	require.NoError(t, err)
+
+	txs, err := r.ConstructTransactions(
+		accountKeys,
+		accounts,
+		transactions,
+		1_000_000,
+		common.DefaultGasPrice,
+		"dummy",
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+	)
+	require.NoError(t, err)
+	require.Len(t, txs, int(transactions))
+
+	// Verify each transaction was signed
+	for i, tx := range txs {
+		assert.Len(t, tx.Signatures, 1, "tx %d should have exactly 1 signature", i)
+	}
+}
+
+func TestRuntime_Mixed_RealmCallUsesPredeployedPath(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmCall, 50},
+			{PackageDeployment, 50},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	accounts := generateAccounts(1)
+
+	// Initialize sets the realmPath
+	_, err = r.Initialize(
+		accounts[0],
+		func(_ *std.Tx) error { return nil },
+		func(_ context.Context, _ *std.Tx) (int64, error) { return 1_000_000, nil },
+		1_000_000,
+		common.DefaultGasPrice,
+	)
+	require.NoError(t, err)
+
+	// Access the mixed runtime to verify realmPath is set and used
+	mr := r.(*mixedRuntime)
+	assert.NotEmpty(t, mr.realmPath)
+	assert.Contains(t, mr.realmPath, realmPathPrefix)
+
+	// Verify getMsgForType produces a MsgCall targeting the predeployed path
+	msg := mr.getMsgForType(RealmCall, accounts[0], 0)
+	callMsg, ok := msg.(vm.MsgCall)
+	require.True(t, ok)
+	assert.Equal(t, mr.realmPath, callMsg.PkgPath)
+	assert.Equal(t, methodName, callMsg.Func)
+}
+
+func TestRuntime_Mixed_DeploymentsHaveUniquePaths(t *testing.T) {
+	t.Parallel()
+
+	config := &MixConfig{
+		Ratios: []mixRatio{
+			{RealmDeployment, 50},
+			{PackageDeployment, 50},
+		},
+	}
+
+	ctx := WithMixConfig(context.Background(), config)
+	r, err := GetRuntime(ctx, Mixed)
+	require.NoError(t, err)
+
+	mr := r.(*mixedRuntime)
+	accounts := generateAccounts(1)
+
+	paths := make(map[string]bool)
+
+	for i := range 5 {
+		msg := mr.getMsgForType(RealmDeployment, accounts[0], i)
+		deployMsg := msg.(vm.MsgAddPackage)
+		assert.False(t, paths[deployMsg.Package.Path], "duplicate realm path at index %d", i)
+		paths[deployMsg.Package.Path] = true
+	}
+
+	for i := range 5 {
+		msg := mr.getMsgForType(PackageDeployment, accounts[0], i)
+		deployMsg := msg.(vm.MsgAddPackage)
+		assert.False(t, paths[deployMsg.Package.Path], "duplicate package path at index %d", i)
+		paths[deployMsg.Package.Path] = true
 	}
 }

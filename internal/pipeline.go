@@ -56,12 +56,26 @@ func NewPipeline(cfg *Config) (*Pipeline, error) {
 
 // Execute runs the entire pipeline process
 func (p *Pipeline) Execute(ctx context.Context) error {
-	var (
-		mode = runtime.Type(p.cfg.Mode)
+	mode := runtime.Type(p.cfg.Mode)
 
+	// Setup the context for mixed mode
+	if mode == runtime.Mixed {
+		mixConfig, err := runtime.ParseMixRatio(p.cfg.MixRatio)
+		if err != nil {
+			return fmt.Errorf("unable to parse mix ratio: %w", err)
+		}
+
+		ctx = runtime.WithMixConfig(ctx, mixConfig)
+	}
+
+	txRuntime, err := runtime.GetRuntime(ctx, mode)
+	if err != nil {
+		return fmt.Errorf("unable to get runtime: %w", err)
+	}
+
+	var (
 		txBatcher   = batcher.NewBatcher(ctx, p.cli)
 		txCollector = collector.NewCollector(ctx, p.cli)
-		txRuntime   = runtime.GetRuntime(ctx, mode)
 	)
 
 	// Initialize the accounts for the runtime
@@ -229,7 +243,14 @@ func prepareRuntime(
 
 	signCB := runtime.SignTransactionsCb(chainID, deployer, deployerKey)
 
-	if mode != runtime.RealmCall {
+	needsPredeploy := mode == runtime.RealmCall
+
+	if mode == runtime.Mixed {
+		mixConfig := runtime.GetMixConfig(ctx)
+		needsPredeploy = mixConfig != nil && mixConfig.HasType(runtime.RealmCall)
+	}
+
+	if !needsPredeploy {
 		return txRuntime.CalculateRuntimeCosts(deployer, cli.EstimateGas, signCB, currentMaxGas, gasPrice, transactions)
 	}
 
