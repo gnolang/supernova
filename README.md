@@ -6,7 +6,7 @@ and report on node performance by executing transactions and measuring response-
 ## Key Features
 
 - 🚀 Batch transactions to make stress testing easier to orchestrate
-- 🛠 Multiple stress testing modes: REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, and REALM_CALL
+- 🛠 Multiple stress testing modes: REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL, and MIXED
 - 💰 Distributed transaction stress testing through subaccounts
 - 💸 Automatic subaccount fund top-up
 - 📊 Detailed statistics calculation
@@ -57,7 +57,9 @@ FLAGS
   -batch 100              the batch size of JSON-RPC transactions
   -chain-id dev           the chain ID of the Gno blockchain
   -mnemonic string        the mnemonic used to generate sub-accounts
-  -mode REALM_DEPLOYMENT  the mode for the stress test. Possible modes: [REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL]
+  -mode REALM_DEPLOYMENT  the mode for the stress test. Possible modes: [REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL, MIXED]
+  -mix-ratio string       transaction mix ratios for MIXED mode, e.g., "REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10"
+  -mix-seed 0             optional seed for reproducible transaction shuffling in MIXED mode (0 = random)
   -output string          the output path for the results JSON
   -sub-accounts 10        the number of sub-accounts that will send out transactions
   -transactions 100       the total number of transactions to be emitted
@@ -80,3 +82,24 @@ deploy a package.
 
 The `REALM_CALL` mode deploys a `Realm` to the Gno blockchain network being tested before starting the cycle run.
 When the cycle run begins, the transactions that are sent out are method calls.
+
+### MIXED
+
+The `MIXED` mode allows combining multiple transaction types in a single stress test run. You specify the ratio of each
+transaction type using the `-mix-ratio` flag. The percentages must sum to 100.
+
+Example:
+```bash
+./build/supernova -mode MIXED -mix-ratio "REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10" ...
+```
+
+This will generate 70% REALM_CALL transactions, 20% REALM_DEPLOYMENT transactions, and 10% PACKAGE_DEPLOYMENT transactions,
+shuffled randomly throughout the run.
+
+For reproducible runs (useful for debugging or benchmarking), use the `-mix-seed` flag:
+```bash
+./build/supernova -mode MIXED -mix-ratio "REALM_CALL:70,REALM_DEPLOYMENT:30" -mix-seed 12345 ...
+```
+
+When running without a seed (or with `-mix-seed 0`), the tool logs the randomly generated seed so you can reproduce
+the exact same transaction ordering later.

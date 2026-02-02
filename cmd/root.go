@@ -64,9 +64,24 @@ func registerFlags(fs *flag.FlagSet, c *internal.Config) {
 		"mode",
 		runtime.RealmDeployment.String(),
 		fmt.Sprintf(
-			"the mode for the stress test. Possible modes: [%s, %s, %s]",
-			runtime.RealmDeployment.String(), runtime.PackageDeployment.String(), runtime.RealmCall.String(),
+			"the mode for the stress test. Possible modes: [%s, %s, %s, %s]",
+			runtime.RealmDeployment.String(), runtime.PackageDeployment.String(),
+			runtime.RealmCall.String(), runtime.Mixed.String(),
 		),
+	)
+
+	fs.StringVar(
+		&c.MixRatio,
+		"mix-ratio",
+		"",
+		"transaction mix ratios for MIXED mode, e.g., \"REALM_CALL:70,REALM_DEPLOYMENT:20,PACKAGE_DEPLOYMENT:10\"",
+	)
+
+	fs.Int64Var(
+		&c.MixSeed,
+		"mix-seed",
+		0,
+		"optional seed for reproducible transaction shuffling in MIXED mode (0 = random)",
 	)
 
 	fs.StringVar(

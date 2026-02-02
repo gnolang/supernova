@@ -2,15 +2,35 @@ package runtime
 
 import (
 	"context"
+	"errors"
 
 	"github.com/gnolang/gno/tm2/pkg/crypto"
 	"github.com/gnolang/gno/tm2/pkg/std"
+)
+
+var (
+	errMissingMixConfig = errors.New("mix config is required for MIXED mode")
+	errUnknownRuntime   = errors.New("unknown runtime type")
 )
 
 const (
 	realmPathPrefix   = "gno.land/r"
 	packagePathPrefix = "gno.land/p"
 )
+
+type mixConfigKey struct{}
+
+// WithMixConfig attaches the mix config to the context
+func WithMixConfig(ctx context.Context, config *MixConfig) context.Context {
+	return context.WithValue(ctx, mixConfigKey{}, config)
+}
+
+// GetMixConfig retrieves the mix config from the context, if any
+func GetMixConfig(ctx context.Context) *MixConfig {
+	config, _ := ctx.Value(mixConfigKey{}).(*MixConfig)
+
+	return config
+}
 
 // EstimateGasFn is the gas estimation callback
 type EstimateGasFn func(ctx context.Context, tx *std.Tx) (int64, error)
@@ -59,15 +79,23 @@ type Runtime interface {
 }
 
 // GetRuntime fetches the specified runtime, if any
-func GetRuntime(ctx context.Context, runtimeType Type) Runtime {
+// Returns an error if the runtime type is unknown or if the mix config is missing for mixed runtimes
+func GetRuntime(ctx context.Context, runtimeType Type) (Runtime, error) {
 	switch runtimeType {
 	case RealmCall:
-		return newRealmCall(ctx)
+		return newRealmCall(ctx), nil
 	case RealmDeployment:
-		return newRealmDeployment(ctx)
+		return newRealmDeployment(ctx), nil
 	case PackageDeployment:
-		return newPackageDeployment(ctx)
+		return newPackageDeployment(ctx), nil
+	case Mixed:
+		config := GetMixConfig(ctx)
+		if config == nil {
+			return nil, errMissingMixConfig
+		}
+
+		return newMixedRuntime(ctx, config), nil
 	default:
-		return nil
+		return nil, errUnknownRuntime
 	}
 }

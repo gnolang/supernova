@@ -30,6 +30,11 @@ func TestType_IsRuntime(t *testing.T) {
 			true,
 		},
 		{
+			"Mixed",
+			Mixed,
+			true,
+		},
+		{
 			"Dummy mode",
 			Type("Dummy mode"),
 			false,
@@ -69,6 +74,11 @@ func TestType_String(t *testing.T) {
 			string(RealmCall),
 		},
 		{
+			"Mixed",
+			Mixed,
+			string(Mixed),
+		},
+		{
 			"Dummy mode",
 			Type("Dummy mode"),
 			string(unknown),
@@ -80,6 +90,50 @@ func TestType_String(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, testCase.expectedStr, testCase.mode.String())
+		})
+	}
+}
+
+func TestType_IsMixableRuntime(t *testing.T) {
+	t.Parallel()
+
+	testTable := []struct {
+		name      string
+		mode      Type
+		isMixable bool
+	}{
+		{
+			"Realm Deployment",
+			RealmDeployment,
+			true,
+		},
+		{
+			"Package Deployment",
+			PackageDeployment,
+			true,
+		},
+		{
+			"Realm Call",
+			RealmCall,
+			true,
+		},
+		{
+			"Mixed",
+			Mixed,
+			false,
+		},
+		{
+			"Dummy mode",
+			Type("Dummy mode"),
+			false,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, testCase.isMixable, IsMixableRuntime(testCase.mode))
 		})
 	}
 }
