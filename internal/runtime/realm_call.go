@@ -61,8 +61,8 @@ func (r *realmCall) Initialize(
 
 	tx := &std.Tx{
 		Msgs: []std.Msg{msg},
-		// passing in the maximum block gas, this is just a simulation
-		Fee: common.CalculateFeeInRatio(currentMaxGas, gasPrice),
+		// Cap the simulation gas to what the account can afford
+		Fee: common.CalculateFeeInRatio(cappedSimulationGas(account, currentMaxGas, gasPrice), gasPrice),
 	}
 
 	err := signFn(tx)
@@ -113,7 +113,7 @@ func (r *realmCall) ConstructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
-	maxGas int64,
+	simulatedGas int64,
 	gasPrice std.GasPrice,
 	chainID string,
 	estimateFn EstimateGasFn,
@@ -123,7 +123,7 @@ func (r *realmCall) ConstructTransactions(
 		keys,
 		accounts,
 		transactions,
-		maxGas,
+		simulatedGas,
 		gasPrice,
 		chainID,
 		r.getMsgFn,

@@ -16,6 +16,21 @@ const gasBuffer = 10_000 // 10k gas
 // msgFn defines the transaction message constructor
 type msgFn func(creator std.Account, index int) std.Msg
 
+// cappedSimulationGas returns the gas value to use for simulation fees.
+// It caps the gas to what the account can actually afford, so the
+// simulate endpoint's balance check doesn't reject the transaction.
+func cappedSimulationGas(account std.Account, maxGas int64, gasPrice std.GasPrice) int64 {
+	balance := account.GetCoins().AmountOf(common.Denomination)
+	// maxAffordableGas = balance * gasPrice.Gas / gasPrice.Price.Amount
+	affordableGas := balance * gasPrice.Gas / gasPrice.Price.Amount
+
+	if affordableGas < maxGas {
+		return affordableGas
+	}
+
+	return maxGas
+}
+
 // constructTransactions constructs and signs the transactions
 // using the passed in message generator and signer
 func constructTransactions(
@@ -23,7 +38,7 @@ func constructTransactions(
 	keys []crypto.PrivKey,
 	accounts []std.Account,
 	transactions uint64,
-	maxGas int64,
+	simulatedGas int64,
 	gasPrice std.GasPrice,
 	chainID string,
 	getMsg msgFn,
@@ -40,10 +55,11 @@ func constructTransactions(
 
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
-	// Estimate the fee for the transaction batch
-	// passing in the maximum block gas, this is just a simulation
+	// Estimate the fee for the transaction batch using the
+	// simulated gas from the initial estimation,
+	// so sub-accounts can afford the simulation fee
 	txFee := common.CalculateFeeInRatio(
-		maxGas,
+		simulatedGas,
 		gasPrice,
 	)
 
@@ -85,7 +101,7 @@ func constructTransactions(
 		return nil, fmt.Errorf("unable to sign transaction, %w", err)
 	}
 
-	fmt.Printf("\nEstimated Gas for 1 run tx: %d \n", tx.Fee.GasWanted)
+	fmt.Printf("\nEstimated gas (with buffer) for 1 run tx: %d \n", tx.Fee.GasWanted)
 	fmt.Printf("\n🔨 Constructing Transactions 🔨\n\n")
 
 	bar := progressbar.Default(int64(transactions), "constructing txs")
@@ -146,10 +162,13 @@ func calculateRuntimeCosts(
 ) (std.Coin, error) {
 	fmt.Printf("\n⏳ Estimating Gas ⏳\n")
 
+	// Cap the simulation gas to what the account can afford,
+	// so the simulate endpoint's balance check doesn't reject the tx
+	simGas := cappedSimulationGas(account, maxBlockMaxGas, gasPrice)
+
 	// Estimate the fee for the transaction batch
-	// passing in the maximum block gas, this is just a simulation
 	txFee := common.CalculateFeeInRatio(
-		maxBlockMaxGas,
+		simGas,
 		gasPrice,
 	)
 
@@ -170,7 +189,7 @@ func calculateRuntimeCosts(
 
 	return std.Coin{
 		Denom:  common.Denomination,
-		Amount: int64(transactions) * estimatedGas,
+		Amount: int64(transactions) * (estimatedGas + gasBuffer),
 	}, nil
 }
 

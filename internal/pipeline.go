@@ -97,6 +97,8 @@ func (p *Pipeline) Execute(ctx context.Context) error {
 		return err
 	}
 
+	simulatedGas := estimatedGas.Amount / int64(p.cfg.Transactions)
+
 	// Extract the addresses
 	addresses := make([]crypto.Address, 0, len(accounts[1:]))
 	for _, account := range accounts[1:] {
@@ -131,7 +133,7 @@ func (p *Pipeline) Execute(ctx context.Context) error {
 		runKeys,
 		runAccounts,
 		p.cfg.Transactions,
-		maxGas,
+		simulatedGas,
 		gasPrice,
 		p.cfg.ChainID,
 		p.cli.EstimateGas,

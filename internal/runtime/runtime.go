@@ -51,7 +51,7 @@ type Runtime interface {
 		keys []crypto.PrivKey,
 		accounts []std.Account,
 		transactions uint64,
-		maxGas int64,
+		simulatedGas int64,
 		gasPrice std.GasPrice,
 		chainID string,
 		estimateFn EstimateGasFn,
