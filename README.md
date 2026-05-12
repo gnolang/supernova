@@ -1,82 +1,159 @@
-## Overview
+# Supernova
 
-`supernova` is a command-line interface (CLI) tool for stress-testing Gno Tendermint 2 networks. It is used to monitor
-and report on node performance by executing transactions and measuring response-time.
+A stress-testing tool for Gno TM2 networks. Simulates realistic transaction
+patterns and measures performance metrics like TPS and block utilization.
+Use it to benchmark node performance by executing transactions under load
+and analyzing response times.
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Why Stress Test Your Network?](#why-stress-test-your-network)
+- [Quick Start](#quick-start)
+- [CLI Flags](#cli-flags)
+- [How Supernova Works](#how-supernova-works)
+- [Testing Modes](#testing-modes)
+- [Understanding Results](#understanding-results)
+- [Integration with Monitoring](#integration-with-monitoring)
+- [When to Use](#when-to-use)
+- [Resources](#resources)
 
 ## Key Features
 
-- 🚀 Batch transactions to make stress testing easier to orchestrate
-- 🛠 Multiple stress testing modes: REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, and REALM_CALL
-- 💰 Distributed transaction stress testing through subaccounts
-- 💸 Automatic subaccount fund top-up
-- 📊 Detailed statistics calculation
-- 📈 Output cycle run results to a file
-
-## Results
+- Batch transactions for efficient stress testing
+- Multiple modes: REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL
+- Distributed testing through subaccounts
+- Automatic subaccount funding
+- Detailed statistics and JSON output
 
 To view the results of the stress tests, visit the [benchmarks reports for supernova](https://github.com/gnolang/benchmarks/tree/main/reports/supernova).
 
-## Usage Example
-
-To run a stress test with `supernova`, you will need to have `go 1.19` or greater.
-
-1. Build out the binary
-
-To build out the binary, run the following command:
-
-```bash
-make build
-```
-
-2. Run the stress test by specifying options
-
-```bash
-./build/supernova -sub-accounts 5 -transactions 100 -url http://localhost:26657 -mnemonic "source bonus chronic canvas draft south burst lottery vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast" -output result.json
-```
-
-This will run a stress test against a Gno TM2 node running at `http://localhost:26657`. The test will use `5`
-sub-accounts, and send out `100` transactions. The sub-accounts are derived from the specified mnemonic. Finally,
-results are saved
-to a file `result.json`.
-
-For any stress test run, there need to be funds on a specific address.
-The address that is in charge of funds distribution to subaccounts is the **first address** with index 0 in the
-specified mnemonic. Make sure this address has an appropriate amount of funds before running the stress test.
-
 ![Banner](.github/demo.gif)
 
-`supernova` supports the following options:
+## Why Stress Test Your Network?
+
+Stress testing answers critical questions before production deployment:
+
+| Question | Why It Matters |
+|----------|----------------|
+| What's my maximum TPS? | Know when performance degrades under load |
+| How do gas limits affect throughput? | Optimize block parameters |
+| Where are the bottlenecks? | Find issues in consensus, storage, or network |
+| How do workloads differ? | Plan capacity for deployments vs calls |
+
+## Quick Start
+
+Requires Go 1.19 or higher.
 
 ```bash
-USAGE
-  [flags] [<arg>...]
+# Build
+make build
 
-Starts the stress testing suite against a Gno TM2 cluster
-
-FLAGS
-  -batch 100              the batch size of JSON-RPC transactions
-  -chain-id dev           the chain ID of the Gno blockchain
-  -mnemonic string        the mnemonic used to generate sub-accounts
-  -mode REALM_DEPLOYMENT  the mode for the stress test. Possible modes: [REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, REALM_CALL]
-  -output string          the output path for the results JSON
-  -sub-accounts 10        the number of sub-accounts that will send out transactions
-  -transactions 100       the total number of transactions to be emitted
-  -url string             the JSON-RPC URL of the cluster
+# Run a stress test
+./build/supernova \
+  -url http://localhost:26657 \
+  -chain-id dev \
+  -mnemonic "source bonus chronic canvas draft south burst lottery vacant surface solve popular case indicate oppose farm nothing bullet exhibit title speed wink action roast" \
+  -sub-accounts 5 \
+  -transactions 100 \
+  -mode REALM_CALL \
+  -output results.json
 ```
 
-## Modes
+This runs a stress test against a Gno TM2 node at `http://localhost:26657`,
+using `5` sub-accounts to send `100` transactions.
+Results are saved to `results.json`.
 
-### REALM_DEPLOYMENT
+For production-grade testing, increase `-sub-accounts` (50-100) and
+`-transactions` (5000+).
 
-The `REALM_DEPLOYMENT` mode is pretty straightforward - it is a simple `Realm` deployment mode from accounts.
-This mode sends out transactions that are deploy transactions for a realm holding state.
+**Note**: This mnemonic derives the default development gnoland account, which is pre-funded in local environments (e.g., `gnodev`). For other environments, ensure the first address (index 0) has sufficient funds for distribution to subaccounts.
 
-### PACKAGE_DEPLOYMENT
+## CLI Flags
 
-The `PACKAGE_DEPLOYMENT` is similar to `REALM_DEPLOYMENT`. This mode also sends out transactions, but these transactions
-deploy a package.
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-url` | (required) | JSON-RPC URL of the Gno node |
+| `-mnemonic` | (required) | Mnemonic for deriving accounts |
+| `-sub-accounts` | 10 | Number of accounts sending transactions |
+| `-transactions` | 100 | Total transactions to send |
+| `-mode` | REALM_DEPLOYMENT | REALM_DEPLOYMENT, PACKAGE_DEPLOYMENT, or REALM_CALL |
+| `-batch` | 100 | Batch size for JSON-RPC calls |
+| `-chain-id` | dev | Chain ID of the network |
+| `-output` | (none) | Path to save results JSON |
 
-### REALM_CALL
+## How Supernova Works
 
-The `REALM_CALL` mode deploys a `Realm` to the Gno blockchain network being tested before starting the cycle run.
-When the cycle run begins, the transactions that are sent out are method calls.
+Supernova operates in three phases:
+
+### 1. Account Setup
+
+Supernova derives multiple subaccounts from a single mnemonic. This
+simulates realistic conditions where transactions come from many different
+addresses, testing the network's ability to handle concurrent account
+state updates.
+
+The tool automatically distributes funds from the main account (index 0)
+to all subaccounts before the test begins.
+
+### 2. Transaction Generation
+
+Based on the selected mode, supernova constructs and signs transactions.
+See [Testing Modes](#testing-modes) for details on each mode.
+
+### 3. Result Collection
+
+After broadcasting transactions, supernova monitors the blockchain to
+collect metrics like TPS, block utilization, and gas consumption.
+
+## Testing Modes
+
+| Mode | What it Does | Best For |
+|------|--------------|----------|
+| REALM_DEPLOYMENT | Deploys a new realm per transaction | Testing heavy workloads (compilation, storage, state init) |
+| PACKAGE_DEPLOYMENT | Deploys pure packages (stateless libraries) | Testing code storage overhead |
+| REALM_CALL | Deploys one realm, then calls its methods | Simulating production workloads |
+
+For most production scenarios, **REALM_CALL** provides the most relevant
+metrics since it simulates typical user interactions.
+
+## Understanding Results
+
+### TPS (Transactions Per Second)
+
+Reflects real-world throughput, accounting for transaction propagation, block
+production intervals, and consensus overhead.
+
+### Block Utilization
+
+| Utilization | Meaning |
+|-------------|---------|
+| Low (<50%) | Network has spare capacity |
+| High (>80%) | Near capacity, consider increasing gas limits |
+| Variable | Inconsistent batching or congestion patterns |
+
+## Integration with Monitoring
+
+For deeper insights, run supernova against a node with
+[OpenTelemetry enabled](https://github.com/gnolang/gno/tree/master/misc/telemetry).
+This allows you to correlate supernova's transaction metrics with internal
+node metrics like:
+
+- Memory and CPU usage during load
+- Consensus round timing
+- Storage I/O patterns
+- Network message latency
+
+## When to Use
+
+| Scenario | Purpose |
+|----------|---------|
+| Pre-production | Validate network handles expected load |
+| Post-config changes | Verify gas limits and timing parameters |
+| Capacity planning | Determine hardware for target TPS |
+| Benchmarking | Compare node configurations |
+
+## Resources
+
+- [Benchmark reports](https://github.com/gnolang/benchmarks/tree/main/reports/supernova)
+- [Gno.land documentation](https://docs.gno.land)
